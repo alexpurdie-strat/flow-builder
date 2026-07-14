@@ -12,7 +12,7 @@ import {
   ReactFlowProvider,
   type Node,
 } from '@xyflow/react'
-import { useFlowStore } from './store'
+import { useFlowStore, type AddMode } from './store'
 import { parseFigmaClipboard } from './utils/figma-paste'
 import StepNode from './nodes/StepNode'
 import GroupNode from './nodes/GroupNode'

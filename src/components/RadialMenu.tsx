@@ -18,12 +18,6 @@ function polarToCart(cx: number, cy: number, r: number, angleDeg: number) {
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }
 }
 
-function arcPath(cx: number, cy: number, r: number, startAngle: number, endAngle: number) {
-  const start = polarToCart(cx, cy, r, endAngle)
-  const end = polarToCart(cx, cy, r, startAngle)
-  const largeArc = endAngle - startAngle > 180 ? 1 : 0
-  return `M ${start.x} ${start.y} A ${r} ${r} 0 ${largeArc} 0 ${end.x} ${end.y}`
-}
 
 function sectorPath(cx: number, cy: number, outerR: number, innerR: number, startAngle: number, endAngle: number) {
   const outerStart = polarToCart(cx, cy, outerR, startAngle)
@@ -248,11 +242,9 @@ export default function RadialMenu() {
                   fontSize={9}
                   fontWeight={600}
                   letterSpacing="0.08em"
-                  textTransform="uppercase"
                   style={{
                     pointerEvents: 'none',
                     transition: 'fill 0.12s',
-                    textTransform: 'uppercase',
                   }}
                 >
                   {mode.label.toUpperCase()}
