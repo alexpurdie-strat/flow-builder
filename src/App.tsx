@@ -224,6 +224,16 @@ function Flow() {
     [setZoom]
   )
 
+  const duplicateNode = useFlowStore((s) => s.duplicateNode)
+
+  const onNodeDragStart = useCallback(
+    (event: MouseEvent | TouchEvent, node: Node) => {
+      if (!('altKey' in event) || !event.altKey) return
+      duplicateNode(node.id, { x: 0, y: 0 })
+    },
+    [duplicateNode]
+  )
+
   const onNodeDragStop = useCallback(
     (_: unknown, node: Node) => {
       handleNodeDropOnGroup(node.id)
@@ -417,6 +427,7 @@ function Flow() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onMove={onMove}
+        onNodeDragStart={onNodeDragStart}
         onNodeDragStop={onNodeDragStop}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}

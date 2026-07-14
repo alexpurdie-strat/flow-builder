@@ -59,6 +59,7 @@ type FlowState = {
   handleNodeDropOnGroup: (nodeId: string) => void
   absorbStepsIntoGroup: (groupId: string) => void
 
+  duplicateNode: (id: string, offset?: { x: number; y: number }) => string | null
   linkSelectedNodes: (sourceHandle?: string, targetHandle?: string) => void
   undo: () => void
   redo: () => void
@@ -285,6 +286,33 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       nodes: [groupNode, ...updatedNodes],
       selectedNodes: [],
     })
+  },
+
+  duplicateNode: (id, offset) => {
+    const { nodes } = get()
+    const node = nodes.find((n) => n.id === id)
+    if (!node || node.type === 'group') return null
+    get().pushHistory()
+
+    const newId = nextId()
+    const dx = offset?.x ?? 20
+    const dy = offset?.y ?? 20
+    const clone: Node = {
+      ...node,
+      id: newId,
+      position: { x: node.position.x + dx, y: node.position.y + dy },
+      data: { ...node.data },
+      selected: true,
+      ...(node.style ? { style: { ...node.style } } : {}),
+    }
+
+    set({
+      nodes: [
+        ...nodes.map((n) => (n.id === id ? { ...n, selected: false } : n)),
+        clone,
+      ],
+    })
+    return newId
   },
 
   linkSelectedNodes: (sourceHandle?: string, targetHandle?: string) => {
