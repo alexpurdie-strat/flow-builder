@@ -60,7 +60,7 @@ type FlowState = {
   absorbStepsIntoGroup: (groupId: string) => void
 
   duplicateNode: (id: string, offset?: { x: number; y: number }) => string | null
-  linkSelectedNodes: (sourceHandle?: string, targetHandle?: string) => void
+  linkSelectedNodes: () => void
   undo: () => void
   redo: () => void
   pushHistory: () => void
@@ -315,32 +315,84 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     return newId
   },
 
-  linkSelectedNodes: (sourceHandle?: string, targetHandle?: string) => {
-    const { selectedNodes, edges } = get()
-    if (selectedNodes.length !== 2) return
+  linkSelectedNodes: () => {
+    const { selectedNodes, nodes, edges } = get()
+    if (selectedNodes.length < 2) return
+
+    const linkable = selectedNodes.filter((id) => {
+      const n = nodes.find((nd) => nd.id === id)
+      return n?.type === 'step' || n?.type === 'group'
+    })
+    if (linkable.length < 2) return
     get().pushHistory()
 
-    const [source, target] = selectedNodes
-    const exists = edges.some(
-      (e) =>
-        (e.source === source && e.target === target) ||
-        (e.source === target && e.target === source)
-    )
-    if (exists) return
+    const [sourceId, ...targetIds] = linkable
+    const sourceNode = nodes.find((n) => n.id === sourceId)
+    if (!sourceNode) return
 
-    set({
-      edges: addEdge(
+    let currentEdges = edges
+    for (const targetId of targetIds) {
+      const exists = currentEdges.some(
+        (e) =>
+          (e.source === sourceId && e.target === targetId) ||
+          (e.source === targetId && e.target === sourceId)
+      )
+      if (exists) continue
+
+      const targetNode = nodes.find((n) => n.id === targetId)
+      if (!targetNode) continue
+
+      const sides = ['top', 'bottom', 'left', 'right'] as const
+      const getDim = (nd: typeof sourceNode) => ({
+        w: (nd.style?.width as number) ?? (nd.measured?.width as number) ?? 180,
+        h: (nd.style?.height as number) ?? (nd.measured?.height as number) ?? 60,
+      })
+      const offset = (side: string, w: number, h: number) => {
+        switch (side) {
+          case 'top': return { x: w / 2, y: 0 }
+          case 'bottom': return { x: w / 2, y: h }
+          case 'left': return { x: 0, y: h / 2 }
+          case 'right': return { x: w, y: h / 2 }
+          default: return { x: w / 2, y: h / 2 }
+        }
+      }
+      const sDim = getDim(sourceNode)
+      const tDim = getDim(targetNode)
+
+      let bestDist = Infinity
+      let bestSH = 'bottom-source'
+      let bestTH = 'top-target'
+      for (const sA of sides) {
+        const oA = offset(sA, sDim.w, sDim.h)
+        const ax = sourceNode.position.x + oA.x
+        const ay = sourceNode.position.y + oA.y
+        for (const sB of sides) {
+          const oB = offset(sB, tDim.w, tDim.h)
+          const bx = targetNode.position.x + oB.x
+          const by = targetNode.position.y + oB.y
+          const d = Math.hypot(ax - bx, ay - by)
+          if (d < bestDist) {
+            bestDist = d
+            bestSH = `${sA}-source`
+            bestTH = `${sB}-target`
+          }
+        }
+      }
+
+      currentEdges = addEdge(
         {
-          source,
-          target,
-          sourceHandle: sourceHandle ?? null,
-          targetHandle: targetHandle ?? null,
+          source: sourceId,
+          target: targetId,
+          sourceHandle: bestSH,
+          targetHandle: bestTH,
           type: 'default',
           animated: true,
         },
-        edges
-      ),
-    })
+        currentEdges
+      )
+    }
+
+    set({ edges: currentEdges })
   },
 
   handleNodeDropOnGroup: (nodeId) => {
