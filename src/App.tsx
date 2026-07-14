@@ -442,7 +442,7 @@ function Flow() {
         selectionOnDrag={!isDragMode}
         panOnDrag={isDragMode ? [2] : [1, 2]}
         selectionMode={SelectionMode.Partial}
-        deleteKeyCode="Delete"
+        deleteKeyCode={["Delete", "Backspace"]}
         multiSelectionKeyCode="Shift"
       >
         <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#334155" />
