@@ -52,11 +52,13 @@ function StepNode({ id, data, selected }: NodeProps) {
         background: 'var(--color-surface)',
         border: `2px solid ${selected ? 'var(--color-accent)' : 'var(--color-border)'}`,
         borderRadius: 10,
-        padding: `${12 * scale}px ${16 * scale}px`,
-        width: 180 * scale,
+        padding: '12px 16px',
+        width: 180,
         cursor: 'grab',
         transition: 'border-color 0.15s, box-shadow 0.15s',
         boxShadow: selected ? '0 0 0 3px rgba(83, 194, 139, 0.15)' : 'none',
+        transform: isUngrouped ? `scale(${scale})` : undefined,
+        transformOrigin: 'top left',
       }}
       onDoubleClick={() => {
         setEditLabel(label)
@@ -78,7 +80,7 @@ function StepNode({ id, data, selected }: NodeProps) {
         <div className="flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
           <input
             className="bg-transparent border-b border-[var(--color-border)] text-[var(--color-accent)] uppercase outline-none pb-1"
-            style={{ fontSize: `${10 * scale}px`, letterSpacing: '0.1em' }}
+            style={{ fontSize: 10, letterSpacing: '0.1em' }}
             placeholder="Eyebrow (optional)"
             value={editEyebrow}
             onChange={(e) => setEditEyebrow(e.target.value)}
@@ -87,14 +89,14 @@ function StepNode({ id, data, selected }: NodeProps) {
           <input
             ref={inputRef}
             className="bg-transparent border-b border-[var(--color-accent)] text-[var(--color-text)] font-medium outline-none pb-1"
-            style={{ fontSize: `${14 * scale}px` }}
+            style={{ fontSize: 14 }}
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && save()}
           />
           <textarea
             className="bg-transparent border border-[var(--color-border)] rounded text-[var(--color-text-muted)] outline-none p-1.5 resize-none"
-            style={{ fontSize: `${12 * scale}px` }}
+            style={{ fontSize: 12 }}
             rows={2}
             placeholder="Description (optional)"
             value={editDesc}
@@ -103,14 +105,14 @@ function StepNode({ id, data, selected }: NodeProps) {
           <div className="flex gap-1.5">
             <button
               className="uppercase tracking-wider rounded bg-[var(--color-accent)] text-[var(--color-canvas)] font-semibold"
-              style={{ fontSize: `${10 * scale}px`, padding: `${2 * scale}px ${8 * scale}px` }}
+              style={{ fontSize: 10, padding: '2px 8px' }}
               onClick={save}
             >
               Save
             </button>
             <button
               className="uppercase tracking-wider rounded bg-transparent border border-[var(--color-border)] text-[var(--color-text-muted)]"
-              style={{ fontSize: `${10 * scale}px`, padding: `${2 * scale}px ${8 * scale}px` }}
+              style={{ fontSize: 10, padding: '2px 8px' }}
               onClick={() => setEditing(false)}
             >
               Cancel
@@ -124,9 +126,9 @@ function StepNode({ id, data, selected }: NodeProps) {
               className="uppercase font-semibold"
               style={{
                 color: 'var(--color-accent)',
-                fontSize: `${10 * scale}px`,
+                fontSize: 10,
                 letterSpacing: '0.1em',
-                marginBottom: 2 * scale,
+                marginBottom: 2,
               }}
             >
               {eyebrow}
@@ -136,7 +138,7 @@ function StepNode({ id, data, selected }: NodeProps) {
             className="font-medium"
             style={{
               color: 'var(--color-text)',
-              fontSize: `${14 * scale}px`,
+              fontSize: 14,
             }}
           >
             {label}
@@ -146,7 +148,7 @@ function StepNode({ id, data, selected }: NodeProps) {
               className="mt-1"
               style={{
                 color: 'var(--color-text-muted)',
-                fontSize: `${12 * scale}px`,
+                fontSize: 12,
               }}
             >
               {description}

@@ -78,10 +78,30 @@ type HistoryEntry = { nodes: Node[]; edges: Edge[] }
 const undoStack: HistoryEntry[] = []
 const redoStack: HistoryEntry[] = []
 const MAX_HISTORY = 50
+const STORAGE_KEY = 'flow-builder-state'
+
+function loadSaved(): { nodes: Node[]; edges: Edge[] } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (data.nodes && data.edges) {
+      const maxId = data.nodes.reduce((max: number, n: Node) => {
+        const num = parseInt(n.id.replace('node_', ''), 10)
+        return isNaN(num) ? max : Math.max(max, num)
+      }, 0)
+      idCounter = maxId
+      return { nodes: data.nodes, edges: data.edges }
+    }
+  } catch { /* ignore */ }
+  return null
+}
+
+const saved = loadSaved()
 
 export const useFlowStore = create<FlowState>((set, get) => ({
-  nodes: [],
-  edges: [],
+  nodes: saved?.nodes ?? [],
+  edges: saved?.edges ?? [],
   zoom: 1,
   selectedNodes: [],
   addMode: 'cursor' as AddMode,
@@ -565,3 +585,9 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({ nodes: [], edges: [] })
   },
 }))
+
+useFlowStore.subscribe((state) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ nodes: state.nodes, edges: state.edges }))
+  } catch { /* quota exceeded, ignore */ }
+})
