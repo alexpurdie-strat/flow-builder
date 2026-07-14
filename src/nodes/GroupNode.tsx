@@ -1,8 +1,8 @@
 import { memo, useState, useRef, useEffect, useCallback } from 'react'
-import { Handle, Position, NodeResizer, type NodeProps } from '@xyflow/react'
+import { Handle, Position, NodeResizer, type NodeProps, useReactFlow } from '@xyflow/react'
 import { useFlowStore } from '../store'
 
-function GroupNode({ id, data, selected }: NodeProps) {
+function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }: NodeProps) {
   const { label, collapsed } = data as { label: string; collapsed?: boolean }
   const [editing, setEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(label)
@@ -13,6 +13,8 @@ function GroupNode({ id, data, selected }: NodeProps) {
   const absorbStepsIntoGroup = useFlowStore((s) => s.absorbStepsIntoGroup)
   const nodes = useFlowStore((s) => s.nodes)
   const zoom = useFlowStore((s) => s.zoom)
+  const setZoom = useFlowStore((s) => s.setZoom)
+  const { setViewport } = useReactFlow()
 
   const onResizeEnd = useCallback(() => {
     absorbStepsIntoGroup(id)
@@ -34,9 +36,42 @@ function GroupNode({ id, data, selected }: NodeProps) {
     setEditing(false)
   }
 
+  const thisNode = nodes.find((n) => n.id === id)
+  const expandedW = (thisNode?.data as Record<string, unknown>)?.expandedWidth as number | undefined
+  const expandedH = (thisNode?.data as Record<string, unknown>)?.expandedHeight as number | undefined
+  const groupW = expandedW ?? (thisNode?.style?.width as number) ?? 400
+  const groupH = expandedH ?? (thisNode?.style?.height as number) ?? 300
+
+  const handleCollapsedClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    const targetZoom = 1.0
+    const cx = positionAbsoluteX + groupW / 2
+    const cy = positionAbsoluteY + groupH / 2
+    const vx = window.innerWidth / 2 - cx * targetZoom
+    const vy = window.innerHeight / 2 - cy * targetZoom
+    setViewport({ x: vx, y: vy, zoom: targetZoom }, { duration: 400 })
+    setTimeout(() => setZoom(targetZoom), 420)
+  }, [positionAbsoluteX, positionAbsoluteY, groupW, groupH, setViewport, setZoom])
+
+  const handleCollapsedDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    const padding = 80
+    const zoomX = (window.innerWidth - padding * 2) / groupW
+    const zoomY = (window.innerHeight - padding * 2) / groupH
+    const targetZoom = Math.min(zoomX, zoomY, 2)
+    const cx = positionAbsoluteX + groupW / 2
+    const cy = positionAbsoluteY + groupH / 2
+    const vx = window.innerWidth / 2 - cx * targetZoom
+    const vy = window.innerHeight / 2 - cy * targetZoom
+    setViewport({ x: vx, y: vy, zoom: targetZoom }, { duration: 400 })
+    setTimeout(() => setZoom(targetZoom), 420)
+  }, [positionAbsoluteX, positionAbsoluteY, groupW, groupH, setViewport, setZoom])
+
   if (collapsed) {
     return (
       <div
+        onClick={handleCollapsedClick}
+        onDoubleClick={handleCollapsedDoubleClick}
         style={{
           background: 'var(--color-group-collapsed-bg)',
           border: `2px solid var(--color-group-border)`,
@@ -44,7 +79,7 @@ function GroupNode({ id, data, selected }: NodeProps) {
           padding: `${20 * scale}px ${28 * scale}px`,
           minWidth: 180 * scale,
           textAlign: 'center',
-          cursor: 'grab',
+          cursor: 'pointer',
           boxShadow: selected ? '0 0 0 3px rgba(83, 194, 139, 0.2)' : 'none',
           backdropFilter: 'blur(8px)',
         }}
@@ -69,7 +104,7 @@ function GroupNode({ id, data, selected }: NodeProps) {
             letterSpacing: '0.1em',
           }}
         >
-          {childCount} step{childCount !== 1 ? 's' : ''} · zoom in to expand
+          {childCount} step{childCount !== 1 ? 's' : ''} · click to open
         </div>
       </div>
     )

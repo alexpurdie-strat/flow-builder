@@ -57,6 +57,7 @@ type FlowState = {
   groupSelectedNodes: () => void
   ungroupNode: (groupId: string) => void
   handleNodeDropOnGroup: (nodeId: string) => void
+  ejectNodeFromGroup: (nodeId: string) => void
   absorbStepsIntoGroup: (groupId: string) => void
 
   duplicateNode: (id: string, offset?: { x: number; y: number }) => string | null
@@ -91,7 +92,19 @@ function loadSaved(): { nodes: Node[]; edges: Edge[] } | null {
         return isNaN(num) ? max : Math.max(max, num)
       }, 0)
       idCounter = maxId
-      return { nodes: data.nodes, edges: data.edges }
+      const nodes = data.nodes.map((n: Node) => {
+        if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
+          const { expandedWidth, expandedHeight, ...rest } = n.data as Record<string, unknown>
+          return {
+            ...n,
+            data: { ...rest, collapsed: false },
+            style: { ...(n.style ?? {}), width: (expandedWidth as number) ?? 400, height: (expandedHeight as number) ?? 300 },
+          }
+        }
+        return { ...n, hidden: false }
+      })
+      const edges = data.edges.map((e: Edge) => ({ ...e, hidden: false }))
+      return { nodes, edges }
     }
   } catch { /* ignore */ }
   return null
@@ -120,8 +133,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   },
 
   setZoom: (zoom) => {
-    const { nodes } = get()
+    const { nodes, edges } = get()
     const collapsed = zoom < ZOOM_COLLAPSE_THRESHOLD
+
+    const hiddenNodeIds = new Set<string>()
 
     const updatedNodes = nodes.map((node) => {
       if (node.type === 'group') {
@@ -148,12 +163,18 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         return { ...node, data: { ...node.data, collapsed } }
       }
       if (node.type !== 'group' && (node.parentId || (node.data as StepNodeData).groupId)) {
+        if (collapsed) hiddenNodeIds.add(node.id)
         return { ...node, hidden: collapsed }
       }
       return node
     })
 
-    set({ zoom, nodes: updatedNodes })
+    const updatedEdges = edges.map((edge) => ({
+      ...edge,
+      hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
+    }))
+
+    set({ zoom, nodes: updatedNodes, edges: updatedEdges })
   },
 
   setSelectedNodes: (ids) => set({ selectedNodes: ids }),
@@ -311,12 +332,46 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   duplicateNode: (id, offset) => {
     const { nodes } = get()
     const node = nodes.find((n) => n.id === id)
-    if (!node || node.type === 'group') return null
+    if (!node) return null
     get().pushHistory()
 
     const newId = nextId()
     const dx = offset?.x ?? 20
     const dy = offset?.y ?? 20
+
+    if (node.type === 'group') {
+      const children = nodes.filter((n) => n.parentId === id)
+      const cloneGroup: Node = {
+        ...node,
+        id: newId,
+        position: { x: node.position.x + dx, y: node.position.y + dy },
+        data: { ...node.data },
+        selected: true,
+        ...(node.style ? { style: { ...node.style } } : {}),
+      }
+      const cloneChildren = children.map((child) => {
+        const childId = nextId()
+        return {
+          ...child,
+          id: childId,
+          parentId: newId,
+          position: { ...child.position },
+          data: { ...child.data, groupId: newId },
+          selected: false,
+          ...(child.style ? { style: { ...child.style } } : {}),
+        }
+      })
+
+      set({
+        nodes: [
+          cloneGroup,
+          ...nodes.map((n) => (n.id === id ? { ...n, selected: false } : n)),
+          ...cloneChildren,
+        ],
+      })
+      return newId
+    }
+
     const clone: Node = {
       ...node,
       id: newId,
@@ -457,6 +512,43 @@ export const useFlowStore = create<FlowState>((set, get) => ({
         })
         return
       }
+    }
+  },
+
+  ejectNodeFromGroup: (nodeId) => {
+    const { nodes } = get()
+    const node = nodes.find((n) => n.id === nodeId)
+    if (!node || !node.parentId) return
+
+    const group = nodes.find((n) => n.id === node.parentId)
+    if (!group) return
+
+    const gw = (group.style?.width as number) ?? 400
+    const gh = (group.style?.height as number) ?? 300
+
+    const nodeW = (node.measured?.width as number) ?? (node.style?.width as number) ?? 180
+    const nodeH = (node.measured?.height as number) ?? (node.style?.height as number) ?? 60
+    const cx = node.position.x + nodeW / 2
+    const cy = node.position.y + nodeH / 2
+
+    if (cx < 0 || cx > gw || cy < 0 || cy > gh) {
+      get().pushHistory()
+      set({
+        nodes: nodes.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              parentId: undefined,
+              position: {
+                x: n.position.x + group.position.x,
+                y: n.position.y + group.position.y,
+              },
+              data: { ...n.data, groupId: undefined },
+            }
+          }
+          return n
+        }),
+      })
     }
   },
 

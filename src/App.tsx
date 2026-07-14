@@ -23,6 +23,7 @@ import ZoomIndicator from './components/ZoomIndicator'
 import LinkNodesOverlay from './components/LinkNodesOverlay'
 import RadialMenu from './components/RadialMenu'
 import CursorFollower from './components/CursorFollower'
+import AlignToolbar from './components/AlignToolbar'
 
 const nodeTypes = {
   step: StepNode,
@@ -128,6 +129,7 @@ function Flow() {
   const lineStartNodeId = useFlowStore((s) => s.lineStartNodeId)
   const setLineStartNode = useFlowStore((s) => s.setLineStartNode)
   const handleNodeDropOnGroup = useFlowStore((s) => s.handleNodeDropOnGroup)
+  const ejectNodeFromGroup = useFlowStore((s) => s.ejectNodeFromGroup)
   const connectingNodeId = useRef<string | null>(null)
 
   const undo = useFlowStore((s) => s.undo)
@@ -236,9 +238,13 @@ function Flow() {
 
   const onNodeDragStop = useCallback(
     (_: unknown, node: Node) => {
-      handleNodeDropOnGroup(node.id)
+      if (node.parentId) {
+        ejectNodeFromGroup(node.id)
+      } else {
+        handleNodeDropOnGroup(node.id)
+      }
     },
-    [handleNodeDropOnGroup]
+    [handleNodeDropOnGroup, ejectNodeFromGroup]
   )
 
   const onConnectStart = useCallback(
@@ -464,6 +470,7 @@ function Flow() {
         <DragLinePreview drag={drag} />
       )}
 
+      <AlignToolbar />
       <LinkNodesOverlay />
       <ZoomIndicator />
       <RadialMenu />
