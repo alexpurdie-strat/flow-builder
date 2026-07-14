@@ -1,0 +1,99 @@
+@import "tailwindcss";
+@import '@xyflow/react/dist/style.css';
+
+:root {
+  --color-canvas: #1a1a2e;
+  --color-surface: #16213e;
+  --color-surface-2: #0f3460;
+  --color-border: #334155;
+  --color-border-hover: #5a7aa5;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-accent: #53c28b;
+  --color-accent-hover: #6ee7a8;
+  --color-group-bg: rgba(83, 194, 139, 0.06);
+  --color-group-border: rgba(83, 194, 139, 0.25);
+  --color-group-collapsed-bg: rgba(83, 194, 139, 0.12);
+  --color-danger: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+#root {
+  height: 100vh;
+  width: 100vw;
+}
+
+.react-flow__background {
+  background: var(--color-canvas) !important;
+}
+
+.react-flow__minimap {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+}
+
+.react-flow__controls {
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+
+.react-flow__controls button {
+  background: var(--color-surface) !important;
+  border-bottom-color: var(--color-border) !important;
+  fill: var(--color-text-muted) !important;
+}
+
+.react-flow__controls button:hover {
+  background: var(--color-surface-2) !important;
+}
+
+.react-flow__controls button svg {
+  fill: var(--color-text-muted) !important;
+}
+
+.react-flow__edge-path {
+  stroke: var(--color-border-hover) !important;
+  stroke-width: 2 !important;
+}
+
+.react-flow__edge-interaction {
+  stroke-width: 20 !important;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: var(--color-accent) !important;
+}
+
+.react-flow__handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: var(--color-border) !important;
+  border: 2px solid var(--color-surface) !important;
+}
+
+.react-flow__handle:hover {
+  background: var(--color-accent) !important;
+}
+
+.react-flow__selection {
+  background: rgba(83, 194, 139, 0.08) !important;
+  border: 1px solid var(--color-accent) !important;
+}
+
+.react-flow__node-group {
+  background: transparent !important;
+}
+
+.hide-cursor .react-flow__pane {
+  cursor: none !important;
+}
