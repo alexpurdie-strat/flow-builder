@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
+  base: '/flow-builder/',
   plugins: [react(), tailwindcss()],
   server: {
     port: parseInt(process.env.PORT || '5173'),
