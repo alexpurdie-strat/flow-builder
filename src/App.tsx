@@ -447,7 +447,11 @@ function Flow() {
         defaultEdgeOptions={{ type: 'default', animated: true }}
         selectionOnDrag={!isDragMode}
         panOnDrag={isDragMode ? [2] : [1, 2]}
+        panOnScroll
+        zoomOnScroll={false}
+        zoomOnPinch
         selectionMode={SelectionMode.Partial}
+        nodesDraggable={addMode !== 'line'}
         deleteKeyCode={["Delete", "Backspace"]}
         multiSelectionKeyCode="Shift"
       >

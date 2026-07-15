@@ -70,41 +70,64 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   if (collapsed) {
     return (
       <div
-        onClick={handleCollapsedClick}
-        onDoubleClick={handleCollapsedDoubleClick}
         style={{
-          background: 'var(--color-group-collapsed-bg)',
-          border: `2px solid var(--color-group-border)`,
-          borderRadius: 14,
-          padding: `${20 * scale}px ${28 * scale}px`,
-          minWidth: 180 * scale,
-          textAlign: 'center',
-          cursor: 'pointer',
-          boxShadow: selected ? '0 0 0 3px rgba(83, 194, 139, 0.2)' : 'none',
-          backdropFilter: 'blur(8px)',
+          position: 'relative',
+          width: groupW,
+          height: groupH,
         }}
       >
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
         <div
-          className="font-semibold mb-1"
           style={{
-            color: 'var(--color-accent)',
-            fontSize: `${16 * scale}px`,
-            lineHeight: 1.3,
+            position: 'absolute',
+            inset: 0,
+            border: '2px dashed var(--color-group-border)',
+            borderRadius: 14,
+            opacity: 0.35,
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          onClick={handleCollapsedClick}
+          onDoubleClick={handleCollapsedDoubleClick}
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(-50%, -50%)',
+            background: 'var(--color-group-collapsed-bg)',
+            border: `2px solid var(--color-group-border)`,
+            borderRadius: 14,
+            padding: `${20 * scale}px ${28 * scale}px`,
+            minWidth: 180 * scale,
+            textAlign: 'center',
+            cursor: 'pointer',
+            boxShadow: selected ? '0 0 0 3px rgba(83, 194, 139, 0.2)' : 'none',
+            backdropFilter: 'blur(8px)',
+            whiteSpace: 'nowrap',
           }}
         >
-          {label}
-        </div>
-        <div
-          className="uppercase"
-          style={{
-            color: 'var(--color-text-muted)',
-            fontSize: `${11 * scale}px`,
-            letterSpacing: '0.1em',
-          }}
-        >
-          {childCount} step{childCount !== 1 ? 's' : ''} · click to open
+          <Handle type="target" position={Position.Top} />
+          <Handle type="source" position={Position.Bottom} />
+          <div
+            className="font-semibold mb-1"
+            style={{
+              color: 'var(--color-accent)',
+              fontSize: `${16 * scale}px`,
+              lineHeight: 1.3,
+            }}
+          >
+            {label}
+          </div>
+          <div
+            className="uppercase"
+            style={{
+              color: 'var(--color-text-muted)',
+              fontSize: `${11 * scale}px`,
+              letterSpacing: '0.1em',
+            }}
+          >
+            {childCount} step{childCount !== 1 ? 's' : ''} · click to open
+          </div>
         </div>
       </div>
     )
