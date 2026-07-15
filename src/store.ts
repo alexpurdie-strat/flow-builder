@@ -59,6 +59,7 @@ type FlowState = {
   updateNodeLabel: (id: string, label: string) => void
   updateNodeDescription: (id: string, description: string) => void
   updateNodeEyebrow: (id: string, eyebrow: string) => void
+  updateNodeImage: (id: string, imageDataUrl: string | null) => void
   deleteNode: (id: string) => void
   deleteEdge: (id: string) => void
   reverseEdge: (id: string) => void
@@ -317,6 +318,15 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       nodes: get().nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, eyebrow } } : n
+      ),
+    })
+  },
+
+  updateNodeImage: (id, imageDataUrl) => {
+    get().pushHistory()
+    set({
+      nodes: get().nodes.map((n) =>
+        n.id === id ? { ...n, data: { ...n.data, image: imageDataUrl } } : n
       ),
     })
   },
