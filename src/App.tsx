@@ -160,6 +160,17 @@ function Flow() {
 
       if (e.metaKey || e.ctrlKey || e.altKey) return
 
+      if (e.key.toLowerCase() === 'r') {
+        const selectedEdges = useFlowStore.getState().edges.filter((ed) => ed.selected)
+        if (selectedEdges.length > 0) {
+          e.preventDefault()
+          for (const edge of selectedEdges) {
+            useFlowStore.getState().reverseEdge(edge.id)
+          }
+          return
+        }
+      }
+
       const keyMap: Record<string, AddMode> = {
         v: 'cursor',
         s: 'step',

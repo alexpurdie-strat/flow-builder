@@ -55,6 +55,7 @@ type FlowState = {
   updateNodeEyebrow: (id: string, eyebrow: string) => void
   deleteNode: (id: string) => void
   deleteEdge: (id: string) => void
+  reverseEdge: (id: string) => void
   groupSelectedNodes: () => void
   ungroupNode: (groupId: string) => void
   handleNodeDropOnGroup: (nodeId: string) => void
@@ -288,6 +289,22 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   deleteEdge: (id) => {
     get().pushHistory()
     set({ edges: get().edges.filter((e) => e.id !== id) })
+  },
+
+  reverseEdge: (id) => {
+    get().pushHistory()
+    set({
+      edges: get().edges.map((e) => {
+        if (e.id !== id) return e
+        return {
+          ...e,
+          source: e.target,
+          target: e.source,
+          sourceHandle: e.targetHandle,
+          targetHandle: e.sourceHandle,
+        }
+      }),
+    })
   },
 
   groupSelectedNodes: () => {

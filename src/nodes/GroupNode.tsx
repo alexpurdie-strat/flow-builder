@@ -91,8 +91,14 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
           whiteSpace: 'nowrap' as const,
         }}
       >
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
+        <Handle type="source" position={Position.Top} id="top-source" />
+        <Handle type="target" position={Position.Top} id="top-target" />
+        <Handle type="source" position={Position.Bottom} id="bottom-source" />
+        <Handle type="target" position={Position.Bottom} id="bottom-target" />
+        <Handle type="source" position={Position.Left} id="left-source" />
+        <Handle type="target" position={Position.Left} id="left-target" />
+        <Handle type="source" position={Position.Right} id="right-source" />
+        <Handle type="target" position={Position.Right} id="right-target" />
         <div
           className="font-semibold mb-1"
           style={{
@@ -131,9 +137,9 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
           style={{
             position: 'absolute',
             inset: 0,
-            border: `2px dashed ${isColliding ? 'var(--color-danger)' : 'var(--color-group-border)'}`,
+            border: `3px dashed ${isColliding ? 'var(--color-danger)' : 'var(--color-group-border)'}`,
             borderRadius: 14,
-            opacity: isColliding ? 1 : 0.8,
+            opacity: 1,
             background: isColliding ? 'rgba(239, 68, 68, 0.06)' : 'transparent',
             pointerEvents: 'none',
             transition: 'border-color 0.15s, opacity 0.15s, background 0.15s',
