@@ -107,6 +107,7 @@ export default function Toolbar() {
   const [dragging, setDragging] = useState(false)
   const [zoomOpen, setZoomOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [exportLevel, setExportLevel] = useState<'detailed' | 'collapsed' | 'overview' | null>(null)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   const nodes = useFlowStore((s) => s.nodes)
 
@@ -165,36 +166,56 @@ export default function Toolbar() {
     e.target.value = ''
   }
 
-  const handleExport = (format: 'png' | 'jpeg', quality: 'low' | 'medium' | 'high') => {
-    const scale = quality === 'low' ? 1 : quality === 'medium' ? 2 : 3
+  type ExportLevel = 'detailed' | 'collapsed' | 'overview'
+
+  const handleExport = (format: 'png' | 'jpeg', level: ExportLevel) => {
     const el = document.querySelector('.react-flow__viewport') as HTMLElement
     if (!el || nodes.length === 0) return
 
+    const pixelRatio = 3
     const padding = 40
-    const nodesBounds = getNodesBounds(nodes)
-    const imageWidth = (nodesBounds.width + padding * 2) * scale
-    const imageHeight = (nodesBounds.height + padding * 2) * scale
-    const viewport = getViewportForBounds(nodesBounds, nodesBounds.width + padding * 2, nodesBounds.height + padding * 2, 0.5, 2, padding)
+
+    const visibleNodes = level === 'overview'
+      ? nodes.filter((n) => n.type === 'group' || !n.parentId)
+      : level === 'collapsed'
+        ? nodes.filter((n) => {
+            if (n.type === 'group') return true
+            if (n.parentId) return false
+            return true
+          })
+        : nodes.filter((n) => !n.hidden)
+
+    const boundsNodes = visibleNodes.length > 0 ? visibleNodes : nodes
+    const nodesBounds = getNodesBounds(boundsNodes)
+
+    const zoomLevel = level === 'detailed' ? 1.5 : level === 'collapsed' ? 1 : 0.6
+    const canvasW = (nodesBounds.width + padding * 2) * zoomLevel
+    const canvasH = (nodesBounds.height + padding * 2) * zoomLevel
+    const vp = {
+      x: (-nodesBounds.x + padding) * zoomLevel,
+      y: (-nodesBounds.y + padding) * zoomLevel,
+      zoom: zoomLevel,
+    }
 
     const opts = {
-      width: imageWidth,
-      height: imageHeight,
+      width: canvasW * pixelRatio,
+      height: canvasH * pixelRatio,
       style: {
-        width: `${nodesBounds.width + padding * 2}px`,
-        height: `${nodesBounds.height + padding * 2}px`,
-        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+        width: `${canvasW}px`,
+        height: `${canvasH}px`,
+        transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
       },
-      pixelRatio: scale,
+      pixelRatio,
+      ...(format === 'jpeg' ? { quality: 0.95 } : {}),
     }
 
     const fn = format === 'png' ? toPng : toJpeg
     const ext = format === 'png' ? 'png' : 'jpg'
-    const finalOpts = format === 'jpeg' ? { ...opts, quality: quality === 'low' ? 0.7 : quality === 'medium' ? 0.85 : 0.95 } : opts
 
-    fn(el, finalOpts).then((dataUrl) => {
+    fn(el, opts).then((dataUrl) => {
       const a = document.createElement('a')
       a.href = dataUrl
-      a.download = `flow.${ext}`
+      a.download = `flow-${level}.${ext}`
       a.click()
     })
     setExportOpen(false)
@@ -257,10 +278,10 @@ export default function Toolbar() {
 
         {/* Export dropdown */}
         <div className="relative">
-          <ToolbarButton onClick={() => setExportOpen(!exportOpen)} label="Export" />
+          <ToolbarButton onClick={() => { setExportOpen(!exportOpen); setExportLevel(null) }} label="Export" />
           {exportOpen && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+              <div className="fixed inset-0 z-40" onClick={() => { setExportOpen(false); setExportLevel(null) }} />
               <div
                 className="absolute z-50 rounded-lg py-2 px-1 mt-1"
                 style={{
@@ -270,22 +291,36 @@ export default function Toolbar() {
                   left: '50%',
                   transform: 'translateX(-50%)',
                   top: '100%',
-                  minWidth: 140,
+                  minWidth: 150,
                 }}
               >
-                <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  PNG
-                </div>
-                {(['low', 'medium', 'high'] as const).map((q) => (
-                  <ExportOption key={`png-${q}`} label={`${q.charAt(0).toUpperCase() + q.slice(1)} (${q === 'low' ? '1x' : q === 'medium' ? '2x' : '3x'})`} onClick={() => handleExport('png', q)} />
-                ))}
-                <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
-                <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                  JPEG
-                </div>
-                {(['low', 'medium', 'high'] as const).map((q) => (
-                  <ExportOption key={`jpg-${q}`} label={`${q.charAt(0).toUpperCase() + q.slice(1)} (${q === 'low' ? '1x' : q === 'medium' ? '2x' : '3x'})`} onClick={() => handleExport('jpeg', q)} />
-                ))}
+                {!exportLevel ? (
+                  <>
+                    <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Level
+                    </div>
+                    <ExportOption label="Detailed" onClick={() => setExportLevel('detailed')} />
+                    <ExportOption label="Groups Collapsed" onClick={() => setExportLevel('collapsed')} />
+                    <ExportOption label="Overview" onClick={() => setExportLevel('overview')} />
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setExportLevel(null)}
+                      className="flex items-center gap-1 px-2 pb-1 w-full"
+                      style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', background: 'transparent', border: 'none', cursor: 'pointer' }}
+                    >
+                      <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><polyline points="5,1 2,4 5,7" /></svg>
+                      {exportLevel === 'detailed' ? 'Detailed' : exportLevel === 'collapsed' ? 'Groups Collapsed' : 'Overview'}
+                    </button>
+                    <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                    <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      Format
+                    </div>
+                    <ExportOption label="PNG" onClick={() => handleExport('png', exportLevel)} />
+                    <ExportOption label="JPEG" onClick={() => handleExport('jpeg', exportLevel)} />
+                  </>
+                )}
               </div>
             </>
           )}
