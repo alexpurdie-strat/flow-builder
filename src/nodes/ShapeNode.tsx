@@ -2,7 +2,7 @@ import { memo, useState, useRef, useEffect, useCallback } from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { useFlowStore, type ShapeType } from '../store'
 
-function ShapeSvg({ shape, selected, w, h }: { shape: ShapeType; selected: boolean; w: number; h: number }) {
+function ShapeSvg({ shape, w, h }: { shape: ShapeType; w: number; h: number }) {
   const stroke = 'var(--color-accent)'
   const fill = 'var(--color-surface)'
   const sw = 2
@@ -93,7 +93,7 @@ function ShapeNode({ id, data, selected }: NodeProps) {
       <Handle type="source" position={Position.Right} id="right-source" />
       <Handle type="target" position={Position.Right} id="right-target" />
 
-      <ShapeSvg shape={shape} selected={!!selected} w={w} h={h} />
+      <ShapeSvg shape={shape} w={w} h={h} />
 
       <div
         style={{

@@ -1,6 +1,6 @@
 import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
-import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
+import { useReactFlow, getNodesBounds } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }

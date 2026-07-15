@@ -1,6 +1,7 @@
+import type React from 'react'
 import { useFlowStore, type ShapeType } from '../store'
 
-const SHAPES: { key: ShapeType; label: string; icon: (active: boolean) => JSX.Element }[] = [
+const SHAPES: { key: ShapeType; label: string; icon: (active: boolean) => React.ReactNode }[] = [
   {
     key: 'rectangle',
     label: 'Rectangle',
