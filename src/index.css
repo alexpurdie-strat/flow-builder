@@ -12,7 +12,7 @@
   --color-accent: #53c28b;
   --color-accent-hover: #6ee7a8;
   --color-group-bg: rgba(83, 194, 139, 0.06);
-  --color-group-border: rgba(83, 194, 139, 0.25);
+  --color-group-border: rgba(83, 194, 139, 0.5);
   --color-group-collapsed-bg: rgba(83, 194, 139, 0.12);
   --color-danger: #ef4444;
 }
@@ -28,7 +28,7 @@
   --color-accent: #059669;
   --color-accent-hover: #047857;
   --color-group-bg: rgba(5, 150, 105, 0.06);
-  --color-group-border: rgba(5, 150, 105, 0.3);
+  --color-group-border: rgba(5, 150, 105, 0.55);
   --color-group-collapsed-bg: rgba(5, 150, 105, 0.1);
   --color-danger: #dc2626;
 }
@@ -107,6 +107,7 @@ body {
 
 .react-flow__node-group {
   background: transparent !important;
+  border: none !important;
 }
 
 .hide-cursor .react-flow__pane {
@@ -124,4 +125,8 @@ body {
 .group-colliding {
   animation: collision-shake 0.3s ease-in-out;
   box-shadow: 0 0 16px 4px rgba(239, 68, 68, 0.35) !important;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

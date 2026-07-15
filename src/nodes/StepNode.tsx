@@ -54,6 +54,7 @@ function StepNode({ id, data, selected }: NodeProps) {
   const [editDesc, setEditDesc] = useState(description || '')
   const [editEyebrow, setEditEyebrow] = useState(eyebrow || '')
   const [dragOver, setDragOver] = useState(false)
+  const [loadingScreenshot, setLoadingScreenshot] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const updateLabel = useFlowStore((s) => s.updateNodeLabel)
   const updateDescription = useFlowStore((s) => s.updateNodeDescription)
@@ -67,12 +68,35 @@ function StepNode({ id, data, selected }: NodeProps) {
   const nodeRef = useRef<HTMLDivElement>(null)
   const hasImage = !!image
 
+  const fetchScreenshot = useCallback((url: string) => {
+    setLoadingScreenshot(true)
+    fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url`, { redirect: 'follow' })
+      .then((res) => {
+        if (!res.ok) throw new Error('Screenshot failed')
+        return res.blob()
+      })
+      .then((blob) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          updateNodeImage(id, reader.result as string)
+          setLoadingScreenshot(false)
+        }
+        reader.readAsDataURL(blob)
+      })
+      .catch(() => setLoadingScreenshot(false))
+  }, [id, updateNodeImage])
+
   const save = useCallback(() => {
     updateLabel(id, editLabel || 'Untitled')
     updateDescription(id, editDesc)
     updateEyebrow(id, editEyebrow)
     setEditing(false)
-  }, [id, editLabel, editDesc, editEyebrow, updateLabel, updateDescription, updateEyebrow])
+
+    const urlMatch = editDesc.match(/https?:\/\/[^\s]+/)
+    if (urlMatch && !image) {
+      fetchScreenshot(urlMatch[0])
+    }
+  }, [id, editLabel, editDesc, editEyebrow, updateLabel, updateDescription, updateEyebrow, image, fetchScreenshot])
 
   useEffect(() => {
     if (editing && inputRef.current) {
@@ -112,9 +136,7 @@ function StepNode({ id, data, selected }: NodeProps) {
     const file = e.dataTransfer.files?.[0]
     if (!file || !file.type.startsWith('image/')) return
     const reader = new FileReader()
-    reader.onload = () => {
-      updateNodeImage(id, reader.result as string)
-    }
+    reader.onload = () => updateNodeImage(id, reader.result as string)
     reader.readAsDataURL(file)
   }, [id, updateNodeImage])
 
@@ -126,7 +148,7 @@ function StepNode({ id, data, selected }: NodeProps) {
         background: 'var(--color-surface)',
         border: `2px solid ${dragOver ? 'var(--color-accent)' : selected ? 'var(--color-accent)' : 'var(--color-border)'}`,
         borderRadius: 10,
-        width: hasImage ? 300 : 180,
+        width: hasImage || loadingScreenshot ? 300 : 180,
         cursor: 'grab',
         transition: 'border-color 0.15s, box-shadow 0.15s, width 0.2s',
         boxShadow: dragOver
@@ -154,6 +176,34 @@ function StepNode({ id, data, selected }: NodeProps) {
       <Handle type="target" position={Position.Left} id="left-target" />
       <Handle type="source" position={Position.Right} id="right-source" />
       <Handle type="target" position={Position.Right} id="right-target" />
+
+      {/* Loading screenshot */}
+      {loadingScreenshot && !hasImage && (
+        <div
+          style={{
+            width: 100,
+            minHeight: 70,
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRight: '1px solid var(--color-border)',
+            background: 'var(--color-surface-2)',
+            borderRadius: '8px 0 0 8px',
+          }}
+        >
+          <div
+            style={{
+              width: 16,
+              height: 16,
+              border: '2px solid var(--color-border)',
+              borderTopColor: 'var(--color-accent)',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+        </div>
+      )}
 
       {/* Image thumbnail */}
       {hasImage && (
