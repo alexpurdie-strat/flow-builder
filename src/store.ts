@@ -140,23 +140,31 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   setZoom: (zoom) => {
     const { nodes, edges } = get()
-    const collapsed = zoom < ZOOM_LEVEL_2
-    const deepCollapsed = zoom < ZOOM_LEVEL_3
+    const level2 = zoom < ZOOM_LEVEL_2
+    const level3 = zoom < ZOOM_LEVEL_3
+
+    const groupsWithChildGroups = new Set<string>()
+    for (const n of nodes) {
+      if (n.type === 'group' && n.parentId) {
+        groupsWithChildGroups.add(n.parentId)
+      }
+    }
 
     const hiddenNodeIds = new Set<string>()
 
     const updatedNodes = nodes.map((node) => {
       if (node.type === 'group') {
         const isNested = !!node.parentId
-        if (isNested && deepCollapsed) {
+        const hasChildGroups = groupsWithChildGroups.has(node.id)
+
+        if (isNested && level3) {
           hiddenNodeIds.add(node.id)
-          return { ...node, hidden: true, data: { ...node.data, collapsed } }
-        }
-        if (isNested && collapsed && !deepCollapsed) {
-          return { ...node, hidden: false, data: { ...node.data, collapsed } }
+          return { ...node, hidden: true, data: { ...node.data, collapsed: true } }
         }
 
-        if (collapsed && !node.data.collapsed) {
+        const shouldCollapse = level3 || (level2 && !hasChildGroups)
+
+        if (shouldCollapse && !node.data.collapsed) {
           const style = { ...(node.style ?? {}) } as Record<string, unknown>
           const ew = style.width
           const eh = style.height
@@ -165,24 +173,24 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           return {
             ...node,
             hidden: false,
-            data: { ...node.data, collapsed, expandedWidth: ew, expandedHeight: eh },
+            data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh },
             style: style as React.CSSProperties,
           }
         }
-        if (!collapsed && node.data.collapsed) {
+        if (!shouldCollapse && node.data.collapsed) {
           const { expandedWidth, expandedHeight, ...rest } = node.data as Record<string, unknown>
           return {
             ...node,
             hidden: false,
-            data: { ...rest, collapsed },
+            data: { ...rest, collapsed: false },
             style: { ...(node.style ?? {}), width: (expandedWidth as number) ?? 400, height: (expandedHeight as number) ?? 300 },
           }
         }
-        return { ...node, hidden: false, data: { ...node.data, collapsed } }
+        return { ...node, hidden: false, data: { ...node.data, collapsed: shouldCollapse } }
       }
       if (node.parentId || (node.data as StepNodeData).groupId) {
-        if (collapsed) hiddenNodeIds.add(node.id)
-        return { ...node, hidden: collapsed }
+        if (level2) hiddenNodeIds.add(node.id)
+        return { ...node, hidden: level2 }
       }
       return node
     })
