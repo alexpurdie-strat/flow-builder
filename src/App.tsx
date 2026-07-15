@@ -18,18 +18,28 @@ import StepNode from './nodes/StepNode'
 import GroupNode from './nodes/GroupNode'
 import TextNode from './nodes/TextNode'
 import LineNode from './nodes/LineNode'
+import ShapeNode from './nodes/ShapeNode'
 import Toolbar from './components/Toolbar'
+import ShapePicker from './components/ShapePicker'
+import TextToolbar from './components/TextToolbar'
 import ZoomIndicator from './components/ZoomIndicator'
+import ThemeToggle from './components/ThemeToggle'
 import LinkNodesOverlay from './components/LinkNodesOverlay'
 import RadialMenu from './components/RadialMenu'
 import CursorFollower from './components/CursorFollower'
 import AlignToolbar from './components/AlignToolbar'
+import FlowEdge from './edges/FlowEdge'
 
 const nodeTypes = {
   step: StepNode,
   group: GroupNode,
   text: TextNode,
   line: LineNode,
+  shape: ShapeNode,
+}
+
+const edgeTypes = {
+  default: FlowEdge,
 }
 
 type DragState = {
@@ -125,6 +135,7 @@ function Flow() {
   const addGroupNode = useFlowStore((s) => s.addGroupNode)
   const addTextNode = useFlowStore((s) => s.addTextNode)
   const addLineNode = useFlowStore((s) => s.addLineNode)
+  const addShapeNode = useFlowStore((s) => s.addShapeNode)
   const addMode = useFlowStore((s) => s.addMode)
   const lineStartNodeId = useFlowStore((s) => s.lineStartNodeId)
   const setLineStartNode = useFlowStore((s) => s.setLineStartNode)
@@ -159,17 +170,6 @@ function Flow() {
       }
 
       if (e.metaKey || e.ctrlKey || e.altKey) return
-
-      if (e.key.toLowerCase() === 'r') {
-        const selectedEdges = useFlowStore.getState().edges.filter((ed) => ed.selected)
-        if (selectedEdges.length > 0) {
-          e.preventDefault()
-          for (const edge of selectedEdges) {
-            useFlowStore.getState().reverseEdge(edge.id)
-          }
-          return
-        }
-      }
 
       const keyMap: Record<string, AddMode> = {
         v: 'cursor',
@@ -313,16 +313,19 @@ function Flow() {
         case 'text':
           addTextNode(position)
           break
+        case 'shape':
+          addShapeNode(position)
+          break
       }
     },
-    [addMode, screenToFlowPosition, addStepNode, addTextNode, setLineStartNode]
+    [addMode, screenToFlowPosition, addStepNode, addTextNode, addShapeNode, setLineStartNode]
   )
 
   // Click-click linking: click node A then node B in line mode
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node) => {
       if (addMode !== 'line') return
-      if (node.type !== 'step' && node.type !== 'group') return
+      if (node.type !== 'step' && node.type !== 'group' && node.type !== 'shape') return
 
       if (!lineStartNodeId) {
         setLineStartNode(node.id)
@@ -424,13 +427,12 @@ function Flow() {
         if (!wasDrag) return // small movement = click, handled by onNodeClick
 
         const target = e.target as HTMLElement
-        const targetNodeId = getNodeIdFromElement(target)
+        const handleEl = target.closest('.react-flow__handle') as HTMLElement | null
+        const targetNodeId = handleEl ? getNodeIdFromElement(handleEl) : null
 
         if (d.sourceNodeId && targetNodeId && d.sourceNodeId !== targetNodeId) {
-          // Drag from node to node → create edge
           createEdgeBetweenNodes(d.sourceNodeId, targetNodeId)
         } else {
-          // Drag on empty canvas → create free-floating line
           addLineNode(d.startFlow, d.currentFlow)
         }
       }
@@ -464,6 +466,7 @@ function Flow() {
         onPaneClick={onPaneClick}
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         minZoom={0.1}
         snapToGrid
@@ -479,7 +482,7 @@ function Flow() {
         deleteKeyCode={["Delete", "Backspace"]}
         multiSelectionKeyCode="Shift"
       >
-        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#334155" />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="var(--color-border)" />
         <Controls position="bottom-right" />
         <MiniMap
           position="top-right"
@@ -499,7 +502,10 @@ function Flow() {
       )}
 
       <AlignToolbar />
+      <ShapePicker />
       <LinkNodesOverlay />
+      <TextToolbar />
+      <ThemeToggle />
       <ZoomIndicator />
       <RadialMenu />
       <CursorFollower />

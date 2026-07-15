@@ -1,9 +1,23 @@
 import { memo, useState, useRef, useEffect } from 'react'
 import { type NodeProps } from '@xyflow/react'
-import { useFlowStore } from '../store'
+import { useFlowStore, type TextStyle } from '../store'
+
+type TextData = {
+  label: string
+  textStyle?: TextStyle
+  bold?: boolean
+  italic?: boolean
+  underline?: boolean
+}
+
+const STYLE_MAP: Record<TextStyle, React.CSSProperties> = {
+  header: { fontSize: 24, fontWeight: 600, lineHeight: 1.2 },
+  body: { fontSize: 14, fontWeight: 400, lineHeight: 1.5 },
+  overline: { fontSize: 11, fontWeight: 500, lineHeight: 1.4, textTransform: 'uppercase', letterSpacing: '0.12em' },
+}
 
 function TextNode({ id, data, selected }: NodeProps) {
-  const { label } = data as { label: string }
+  const { label, textStyle = 'body', bold, italic, underline } = data as TextData
   const [editing, setEditing] = useState(false)
   const [editLabel, setEditLabel] = useState(label)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -23,6 +37,15 @@ function TextNode({ id, data, selected }: NodeProps) {
   const save = () => {
     updateLabel(id, editLabel || 'Text')
     setEditing(false)
+  }
+
+  const baseStyle = STYLE_MAP[textStyle] ?? STYLE_MAP.body
+  const textCss: React.CSSProperties = {
+    ...baseStyle,
+    fontSize: (baseStyle.fontSize as number) * scale,
+    fontWeight: bold ? 700 : baseStyle.fontWeight,
+    fontStyle: italic ? 'italic' : 'normal',
+    textDecoration: underline ? 'underline' : 'none',
   }
 
   return (
@@ -46,7 +69,7 @@ function TextNode({ id, data, selected }: NodeProps) {
           <textarea
             ref={inputRef}
             className="bg-transparent text-[var(--color-text-muted)] outline-none resize-none w-full"
-            style={{ fontSize: `${14 * scale}px` }}
+            style={textCss}
             rows={3}
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
@@ -61,9 +84,8 @@ function TextNode({ id, data, selected }: NodeProps) {
         <div
           style={{
             color: 'var(--color-text-muted)',
-            fontSize: `${14 * scale}px`,
-            lineHeight: 1.5,
             whiteSpace: 'pre-wrap',
+            ...textCss,
           }}
         >
           {label}

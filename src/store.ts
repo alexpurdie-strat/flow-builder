@@ -11,7 +11,10 @@ import {
   addEdge,
 } from '@xyflow/react'
 
-export type AddMode = 'cursor' | 'step' | 'group' | 'text' | 'line'
+export type TextStyle = 'body' | 'header' | 'overline'
+export type ShapeType = 'rectangle' | 'rounded' | 'circle' | 'diamond' | 'triangle'
+export type EndpointStyle = 'none' | 'arrow' | 'arrowclosed' | 'dot'
+export type AddMode = 'cursor' | 'step' | 'group' | 'text' | 'line' | 'shape'
 
 export type StepNodeData = {
   label: string
@@ -36,6 +39,7 @@ type FlowState = {
   selectedNodes: string[]
   addMode: AddMode
   lineStartNodeId: string | null
+  selectedShape: ShapeType
   collidingGroupIds: string[]
 
   onNodesChange: OnNodesChange
@@ -45,11 +49,13 @@ type FlowState = {
   setSelectedNodes: (ids: string[]) => void
   setAddMode: (mode: AddMode) => void
   setLineStartNode: (id: string | null) => void
+  setSelectedShape: (shape: ShapeType) => void
 
   addStepNode: (position: { x: number; y: number }) => void
   addGroupNode: (position: { x: number; y: number }, size?: { width: number; height: number }) => string
   addTextNode: (position: { x: number; y: number }) => void
   addLineNode: (start: { x: number; y: number }, end: { x: number; y: number }) => void
+  addShapeNode: (position: { x: number; y: number }) => void
   updateNodeLabel: (id: string, label: string) => void
   updateNodeDescription: (id: string, description: string) => void
   updateNodeEyebrow: (id: string, eyebrow: string) => void
@@ -61,6 +67,8 @@ type FlowState = {
   handleNodeDropOnGroup: (nodeId: string) => void
   ejectNodeFromGroup: (nodeId: string) => void
   absorbStepsIntoGroup: (groupId: string) => void
+  updateEdgeStyle: (id: string, updates: { strokeWidth?: number; startType?: EndpointStyle; endType?: EndpointStyle }) => void
+  updateTextFormat: (id: string, format: { textStyle?: TextStyle; bold?: boolean; italic?: boolean; underline?: boolean }) => void
 
   setCollidingGroupIds: (ids: string[]) => void
   checkGroupCollision: (draggedId: string) => void
@@ -128,6 +136,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   selectedNodes: [],
   addMode: 'cursor' as AddMode,
   lineStartNodeId: null,
+  selectedShape: 'rectangle' as ShapeType,
   collidingGroupIds: [],
 
   onNodesChange: (changes) => {
@@ -221,6 +230,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   setSelectedNodes: (ids) => set({ selectedNodes: ids }),
   setAddMode: (mode) => set({ addMode: mode, lineStartNodeId: null }),
   setLineStartNode: (id) => set({ lineStartNodeId: id }),
+  setSelectedShape: (shape) => set({ selectedShape: shape }),
 
   addStepNode: (position) => {
     get().pushHistory()
@@ -269,6 +279,20 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       type: 'line',
       position: start,
       data: { dx: end.x - start.x, dy: end.y - start.y },
+    }
+    set({ nodes: [...get().nodes, newNode] })
+  },
+
+  addShapeNode: (position) => {
+    get().pushHistory()
+    const id = nextId()
+    const shape = get().selectedShape
+    const newNode: Node = {
+      id,
+      type: 'shape',
+      position,
+      data: { label: '', shape },
+      style: { width: 120, height: 80 },
     }
     set({ nodes: [...get().nodes, newNode] })
   },
@@ -453,7 +477,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
     const linkable = selectedNodes.filter((id) => {
       const n = nodes.find((nd) => nd.id === id)
-      return n?.type === 'step' || n?.type === 'group'
+      return n?.type === 'step' || n?.type === 'group' || n?.type === 'shape'
     })
     if (linkable.length < 2) return
     get().pushHistory()
@@ -708,6 +732,35 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           }
         }
         return n
+      }),
+    })
+  },
+
+  updateEdgeStyle: (id, updates) => {
+    get().pushHistory()
+    set({
+      edges: get().edges.map((e) => {
+        if (e.id !== id) return e
+        const data = { ...(e.data ?? {}) } as Record<string, unknown>
+        if (updates.strokeWidth !== undefined) data.strokeWidth = updates.strokeWidth
+        if (updates.startType !== undefined) data.startType = updates.startType
+        if (updates.endType !== undefined) data.endType = updates.endType
+        return { ...e, data }
+      }),
+    })
+  },
+
+  updateTextFormat: (id, format) => {
+    get().pushHistory()
+    set({
+      nodes: get().nodes.map((n) => {
+        if (n.id !== id) return n
+        const data = { ...n.data } as Record<string, unknown>
+        if (format.textStyle !== undefined) data.textStyle = format.textStyle
+        if (format.bold !== undefined) data.bold = format.bold
+        if (format.italic !== undefined) data.italic = format.italic
+        if (format.underline !== undefined) data.underline = format.underline
+        return { ...n, data }
       }),
     })
   },
