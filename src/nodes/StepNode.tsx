@@ -181,8 +181,8 @@ function StepNode({ id, data, selected }: NodeProps) {
       {loadingScreenshot && !hasImage && (
         <div
           style={{
-            width: 100,
-            minHeight: 70,
+            width: 80,
+            height: 80,
             flexShrink: 0,
             display: 'flex',
             alignItems: 'center',
@@ -209,8 +209,7 @@ function StepNode({ id, data, selected }: NodeProps) {
       {hasImage && (
         <div
           style={{
-            width: 100,
-            minHeight: 70,
+            width: 80,
             flexShrink: 0,
             position: 'relative',
             borderRight: '1px solid var(--color-border)',
@@ -226,6 +225,7 @@ function StepNode({ id, data, selected }: NodeProps) {
               width: '100%',
               height: '100%',
               objectFit: 'cover',
+              objectPosition: 'top center',
               display: 'block',
             }}
           />

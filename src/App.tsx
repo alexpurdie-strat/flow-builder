@@ -29,8 +29,8 @@ import RadialMenu from './components/RadialMenu'
 import CursorFollower from './components/CursorFollower'
 import AlignToolbar from './components/AlignToolbar'
 
-const BUILD = 30
-const BUILD_DATE = '14/07/2026 22:55 EST'
+const BUILD = 31
+const BUILD_DATE = '14/07/2026 23:10 EST'
 import FlowEdge from './edges/FlowEdge'
 
 const nodeTypes = {
