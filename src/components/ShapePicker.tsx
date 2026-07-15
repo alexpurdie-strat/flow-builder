@@ -52,6 +52,23 @@ const SHAPES: { key: ShapeType; label: string; icon: (active: boolean) => React.
       </svg>
     ),
   },
+  {
+    key: 'star',
+    label: 'Star',
+    icon: (a) => {
+      const c = a ? 'var(--color-canvas)' : 'currentColor'
+      const pts = Array.from({ length: 10 }, (_, i) => {
+        const angle = -Math.PI / 2 + (Math.PI / 5) * i
+        const r = i % 2 === 0 ? 8 : 3.2
+        return `${9 + r * Math.cos(angle)},${9 + r * Math.sin(angle)}`
+      }).join(' ')
+      return (
+        <svg width="18" height="18" viewBox="0 0 18 18">
+          <polygon points={pts} fill="none" stroke={c} strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+      )
+    },
+  },
 ]
 
 export default function ShapePicker() {

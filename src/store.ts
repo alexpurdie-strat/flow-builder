@@ -12,7 +12,7 @@ import {
 } from '@xyflow/react'
 
 export type TextStyle = 'body' | 'header' | 'overline'
-export type ShapeType = 'rectangle' | 'rounded' | 'circle' | 'diamond' | 'triangle'
+export type ShapeType = 'rectangle' | 'rounded' | 'circle' | 'diamond' | 'triangle' | 'star'
 export type EndpointStyle = 'none' | 'arrow' | 'arrowclosed' | 'dot'
 export type AddMode = 'cursor' | 'step' | 'group' | 'text' | 'line' | 'shape'
 
@@ -60,6 +60,7 @@ type FlowState = {
   updateNodeDescription: (id: string, description: string) => void
   updateNodeEyebrow: (id: string, eyebrow: string) => void
   updateNodeImage: (id: string, imageDataUrl: string | null) => void
+  updateNodeData: (id: string, data: Record<string, unknown>) => void
   deleteNode: (id: string) => void
   deleteEdge: (id: string) => void
   reverseEdge: (id: string) => void
@@ -327,6 +328,15 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       nodes: get().nodes.map((n) =>
         n.id === id ? { ...n, data: { ...n.data, image: imageDataUrl } } : n
+      ),
+    })
+  },
+
+  updateNodeData: (id, data) => {
+    get().pushHistory()
+    set({
+      nodes: get().nodes.map((n) =>
+        n.id === id ? { ...n, data: { ...n.data, ...data } } : n
       ),
     })
   },

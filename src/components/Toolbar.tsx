@@ -1,6 +1,6 @@
 import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
-import { useReactFlow, getNodesBounds } from '@xyflow/react'
+import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
@@ -173,7 +173,7 @@ export default function Toolbar() {
     if (!el || nodes.length === 0) return
 
     const pixelRatio = 3
-    const padding = 40
+    const padding = 60
 
     const visibleNodes = level === 'overview'
       ? nodes.filter((n) => n.type === 'group' || !n.parentId)
@@ -188,22 +188,17 @@ export default function Toolbar() {
     const boundsNodes = visibleNodes.length > 0 ? visibleNodes : nodes
     const nodesBounds = getNodesBounds(boundsNodes)
 
-    const zoomLevel = level === 'detailed' ? 1.5 : level === 'collapsed' ? 1 : 0.6
-    const canvasW = (nodesBounds.width + padding * 2) * zoomLevel
-    const canvasH = (nodesBounds.height + padding * 2) * zoomLevel
-    const vp = {
-      x: (-nodesBounds.x + padding) * zoomLevel,
-      y: (-nodesBounds.y + padding) * zoomLevel,
-      zoom: zoomLevel,
-    }
+    const imageW = nodesBounds.width + padding * 2
+    const imageH = nodesBounds.height + padding * 2
+    const viewport = getViewportForBounds(nodesBounds, imageW, imageH, 0.5, 2, padding)
 
     const opts = {
-      width: canvasW * pixelRatio,
-      height: canvasH * pixelRatio,
+      width: imageW * pixelRatio,
+      height: imageH * pixelRatio,
       style: {
-        width: `${canvasW}px`,
-        height: `${canvasH}px`,
-        transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.zoom})`,
+        width: `${imageW}px`,
+        height: `${imageH}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
       },
       pixelRatio,
       ...(format === 'jpeg' ? { quality: 0.95 } : {}),
