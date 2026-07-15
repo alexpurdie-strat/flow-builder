@@ -26,7 +26,7 @@ function getStartAngle(position: Position): number {
 function ArrowMarker({ x, y, angle, filled, color, size }: {
   x: number; y: number; angle: number; filled: boolean; color: string; size: number
 }) {
-  const hw = size * 0.6
+  const hw = size * 0.5
   if (filled) {
     return (
       <polygon
@@ -105,7 +105,7 @@ function FlowEdge({
   })
 
   const markerColor = selected ? 'var(--color-accent)' : 'var(--color-border-hover)'
-  const arrowSize = 8
+  const arrowSize = 5
 
   const endAngle = getEndAngle(targetPosition)
   const startAngle = getStartAngle(sourcePosition)
@@ -132,7 +132,7 @@ function FlowEdge({
         <ArrowMarker x={sourceX} y={sourceY} angle={startAngle} filled={true} color={markerColor} size={arrowSize} />
       )}
       {startType === 'dot' && (
-        <circle cx={sourceX} cy={sourceY} r={strokeWidth + 2} fill={markerColor} />
+        <circle cx={sourceX} cy={sourceY} r={Math.max(2, strokeWidth)} fill={markerColor} />
       )}
 
       {/* End marker */}
@@ -143,7 +143,7 @@ function FlowEdge({
         <ArrowMarker x={targetX} y={targetY} angle={endAngle} filled={true} color={markerColor} size={arrowSize} />
       )}
       {endType === 'dot' && (
-        <circle cx={targetX} cy={targetY} r={strokeWidth + 2} fill={markerColor} />
+        <circle cx={targetX} cy={targetY} r={Math.max(2, strokeWidth)} fill={markerColor} />
       )}
 
       {selected && (

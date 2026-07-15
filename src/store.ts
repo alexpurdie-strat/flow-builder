@@ -356,12 +356,16 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     set({
       edges: get().edges.map((e) => {
         if (e.id !== id) return e
+        const data = e.data as Record<string, unknown> | undefined
+        const startType = data?.startType
+        const endType = data?.endType
         return {
           ...e,
           source: e.target,
           target: e.source,
           sourceHandle: e.targetHandle,
           targetHandle: e.sourceHandle,
+          data: { ...data, startType: endType, endType: startType },
         }
       }),
     })
