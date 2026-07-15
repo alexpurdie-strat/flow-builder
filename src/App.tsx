@@ -28,6 +28,9 @@ import LinkNodesOverlay from './components/LinkNodesOverlay'
 import RadialMenu from './components/RadialMenu'
 import CursorFollower from './components/CursorFollower'
 import AlignToolbar from './components/AlignToolbar'
+
+const BUILD = 29
+const BUILD_DATE = '14/07/2026 22:45 EST'
 import FlowEdge from './edges/FlowEdge'
 
 const nodeTypes = {
@@ -450,6 +453,7 @@ function Flow() {
       onMouseMove={handleWrapperMouseMove}
       onMouseUp={handleWrapperMouseUp}
     >
+      <div className="fixed top-2 left-2 z-10" style={{ fontSize: 9, color: 'var(--color-text-muted)', opacity: 0.4 }}>release no. b{BUILD} [{BUILD_DATE}]</div>
       <Toolbar />
       <ReactFlow
         nodes={nodes}
