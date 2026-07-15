@@ -77,7 +77,8 @@ type FlowState = {
 let idCounter = 0
 const nextId = () => `node_${++idCounter}`
 
-const ZOOM_COLLAPSE_THRESHOLD = 0.9
+const ZOOM_LEVEL_2 = 0.9
+const ZOOM_LEVEL_3 = 0.5
 
 type HistoryEntry = { nodes: Node[]; edges: Edge[] }
 const undoStack: HistoryEntry[] = []
@@ -139,12 +140,22 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
   setZoom: (zoom) => {
     const { nodes, edges } = get()
-    const collapsed = zoom < ZOOM_COLLAPSE_THRESHOLD
+    const collapsed = zoom < ZOOM_LEVEL_2
+    const deepCollapsed = zoom < ZOOM_LEVEL_3
 
     const hiddenNodeIds = new Set<string>()
 
     const updatedNodes = nodes.map((node) => {
       if (node.type === 'group') {
+        const isNested = !!node.parentId
+        if (isNested && deepCollapsed) {
+          hiddenNodeIds.add(node.id)
+          return { ...node, hidden: true, data: { ...node.data, collapsed } }
+        }
+        if (isNested && collapsed && !deepCollapsed) {
+          return { ...node, hidden: false, data: { ...node.data, collapsed } }
+        }
+
         if (collapsed && !node.data.collapsed) {
           const style = { ...(node.style ?? {}) } as Record<string, unknown>
           const ew = style.width
@@ -153,6 +164,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           delete style.height
           return {
             ...node,
+            hidden: false,
             data: { ...node.data, collapsed, expandedWidth: ew, expandedHeight: eh },
             style: style as React.CSSProperties,
           }
@@ -161,13 +173,14 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           const { expandedWidth, expandedHeight, ...rest } = node.data as Record<string, unknown>
           return {
             ...node,
+            hidden: false,
             data: { ...rest, collapsed },
             style: { ...(node.style ?? {}), width: (expandedWidth as number) ?? 400, height: (expandedHeight as number) ?? 300 },
           }
         }
-        return { ...node, data: { ...node.data, collapsed } }
+        return { ...node, hidden: false, data: { ...node.data, collapsed } }
       }
-      if (node.type !== 'group' && (node.parentId || (node.data as StepNodeData).groupId)) {
+      if (node.parentId || (node.data as StepNodeData).groupId) {
         if (collapsed) hiddenNodeIds.add(node.id)
         return { ...node, hidden: collapsed }
       }

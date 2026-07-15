@@ -2,7 +2,18 @@ import { useFlowStore } from '../store'
 
 export default function ZoomIndicator() {
   const zoom = useFlowStore((s) => s.zoom)
-  const isCollapsed = zoom < 0.5
+
+  const level = zoom >= 0.9 ? 1 : zoom >= 0.5 ? 2 : 3
+  const labels = {
+    1: 'Detailed view — zoom out to collapse groups',
+    2: 'Groups collapsed — nested groups visible',
+    3: 'Overview — only top-level groups shown',
+  }
+  const colors = {
+    1: 'var(--color-text-muted)',
+    2: 'var(--color-accent)',
+    3: 'var(--color-accent)',
+  }
 
   return (
     <div
@@ -12,15 +23,20 @@ export default function ZoomIndicator() {
         border: '1px solid var(--color-border)',
       }}
     >
-      <div
-        className="w-2 h-2 rounded-full"
-        style={{
-          background: isCollapsed ? 'var(--color-accent)' : 'var(--color-text-muted)',
-          transition: 'background 0.2s',
-        }}
-      />
+      <div className="flex items-center gap-1">
+        {[1, 2, 3].map((l) => (
+          <div
+            key={l}
+            className="w-2 h-2 rounded-full"
+            style={{
+              background: l <= level ? colors[level as 1 | 2 | 3] : 'var(--color-border)',
+              transition: 'background 0.2s',
+            }}
+          />
+        ))}
+      </div>
       <span style={{ color: 'var(--color-text-muted)' }}>
-        {isCollapsed ? 'Collapsed view — zoom in to expand groups' : 'Detailed view — zoom out to collapse groups'}
+        {labels[level]}
       </span>
     </div>
   )

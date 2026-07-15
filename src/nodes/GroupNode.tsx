@@ -21,7 +21,13 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
     absorbStepsIntoGroup(id)
   }, [id, absorbStepsIntoGroup])
 
-  const childCount = nodes.filter((n) => n.parentId === id).length
+  const children = nodes.filter((n) => n.parentId === id)
+  const childSteps = children.filter((n) => n.type !== 'group').length
+  const childGroups = children.filter((n) => n.type === 'group').length
+  const childLabel = [
+    childSteps > 0 ? `${childSteps} step${childSteps !== 1 ? 's' : ''}` : '',
+    childGroups > 0 ? `${childGroups} group${childGroups !== 1 ? 's' : ''}` : '',
+  ].filter(Boolean).join(' · ') || 'empty'
 
   const scale = Math.max(1, 1 / zoom)
 
@@ -69,7 +75,7 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   }, [positionAbsoluteX, positionAbsoluteY, groupW, groupH, setViewport, setZoom])
 
   if (collapsed) {
-    const showFootprint = childCount > 0
+    const showFootprint = children.length > 0
 
     const pill = (
       <div
@@ -117,7 +123,7 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
             letterSpacing: '0.1em',
           }}
         >
-          {childCount} step{childCount !== 1 ? 's' : ''} · click to open
+          {childLabel} · click to open
         </div>
       </div>
     )
@@ -224,7 +230,7 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
                 letterSpacing: '0.1em',
               }}
             >
-              {childCount} step{childCount !== 1 ? 's' : ''}
+              {childLabel}
             </span>
           </>
         )}
