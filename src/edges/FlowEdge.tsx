@@ -151,7 +151,7 @@ function FlowEdge({
           <div
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              transform: `translate(-50%, -100%) translate(${labelX}px, ${labelY - 12}px)`,
               pointerEvents: 'all',
               display: 'flex',
               alignItems: 'center',
