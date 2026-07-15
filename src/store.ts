@@ -166,8 +166,8 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
         if (shouldCollapse && !node.data.collapsed) {
           const style = { ...(node.style ?? {}) } as Record<string, unknown>
-          const ew = style.width
-          const eh = style.height
+          const ew = (style.width as number) ?? (node.measured?.width as number) ?? 400
+          const eh = (style.height as number) ?? (node.measured?.height as number) ?? 300
           delete style.width
           delete style.height
           return {
