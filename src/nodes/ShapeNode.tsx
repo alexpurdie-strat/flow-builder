@@ -3,7 +3,7 @@ import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { useFlowStore, type ShapeType } from '../store'
 
 function ShapeSvg({ shape, selected, w, h }: { shape: ShapeType; selected: boolean; w: number; h: number }) {
-  const stroke = selected ? 'var(--color-accent)' : 'var(--color-border)'
+  const stroke = 'var(--color-accent)'
   const fill = 'var(--color-surface)'
   const sw = 2
   const p = sw / 2

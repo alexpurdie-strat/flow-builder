@@ -104,7 +104,7 @@ function FlowEdge({
     sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition,
   })
 
-  const markerColor = selected ? 'var(--color-accent)' : 'var(--color-border-hover)'
+  const markerColor = 'var(--color-accent)'
   const arrowSize = 5
 
   const endAngle = getEndAngle(targetPosition)
@@ -122,7 +122,7 @@ function FlowEdge({
 
   return (
     <>
-      <BaseEdge path={edgePath} style={{ ...style, strokeWidth }} />
+      <BaseEdge path={edgePath} style={{ ...style, strokeWidth, stroke: 'var(--color-accent)' }} />
 
       {/* Start marker */}
       {startType === 'arrow' && (

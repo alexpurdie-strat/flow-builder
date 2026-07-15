@@ -55,7 +55,7 @@ function TextNode({ id, data, selected }: NodeProps) {
         padding: `${8 * scale}px ${12 * scale}px`,
         cursor: 'grab',
         maxWidth: 300 * scale,
-        borderLeft: `2px solid ${selected ? 'var(--color-accent)' : 'var(--color-text-muted)'}`,
+        borderLeft: '2px solid var(--color-accent)',
         background: selected ? 'rgba(83, 194, 139, 0.05)' : 'transparent',
         borderRadius: '0 4px 4px 0',
       }}

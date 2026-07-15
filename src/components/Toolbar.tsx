@@ -1,6 +1,7 @@
 import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
-import { useReactFlow } from '@xyflow/react'
+import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
+import { toPng, toJpeg } from 'html-to-image'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
 
@@ -105,7 +106,9 @@ export default function Toolbar() {
   const [anchor, setAnchor] = useState<Anchor>('top')
   const [dragging, setDragging] = useState(false)
   const [zoomOpen, setZoomOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
+  const nodes = useFlowStore((s) => s.nodes)
 
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault()
@@ -162,6 +165,41 @@ export default function Toolbar() {
     e.target.value = ''
   }
 
+  const handleExport = (format: 'png' | 'jpeg', quality: 'low' | 'medium' | 'high') => {
+    const scale = quality === 'low' ? 1 : quality === 'medium' ? 2 : 3
+    const el = document.querySelector('.react-flow__viewport') as HTMLElement
+    if (!el || nodes.length === 0) return
+
+    const padding = 40
+    const nodesBounds = getNodesBounds(nodes)
+    const imageWidth = (nodesBounds.width + padding * 2) * scale
+    const imageHeight = (nodesBounds.height + padding * 2) * scale
+    const viewport = getViewportForBounds(nodesBounds, nodesBounds.width + padding * 2, nodesBounds.height + padding * 2, 0.5, 2, padding)
+
+    const opts = {
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${nodesBounds.width + padding * 2}px`,
+        height: `${nodesBounds.height + padding * 2}px`,
+        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+      },
+      pixelRatio: scale,
+    }
+
+    const fn = format === 'png' ? toPng : toJpeg
+    const ext = format === 'png' ? 'png' : 'jpg'
+    const finalOpts = format === 'jpeg' ? { ...opts, quality: quality === 'low' ? 0.7 : quality === 'medium' ? 0.85 : 0.95 } : opts
+
+    fn(el, finalOpts).then((dataUrl) => {
+      const a = document.createElement('a')
+      a.href = dataUrl
+      a.download = `flow.${ext}`
+      a.click()
+    })
+    setExportOpen(false)
+  }
+
   const isVertical = anchor === 'left' || anchor === 'right'
 
   return (
@@ -214,6 +252,44 @@ export default function Toolbar() {
         <ToolbarButton onClick={handleSave} label="Save" />
         <ToolbarButton onClick={() => fileInputRef.current?.click()} label="Load" />
         <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleLoad} />
+
+        <Divider vertical={isVertical} />
+
+        {/* Export dropdown */}
+        <div className="relative">
+          <ToolbarButton onClick={() => setExportOpen(!exportOpen)} label="Export" />
+          {exportOpen && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setExportOpen(false)} />
+              <div
+                className="absolute z-50 rounded-lg py-2 px-1 mt-1"
+                style={{
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  top: '100%',
+                  minWidth: 140,
+                }}
+              >
+                <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  PNG
+                </div>
+                {(['low', 'medium', 'high'] as const).map((q) => (
+                  <ExportOption key={`png-${q}`} label={`${q.charAt(0).toUpperCase() + q.slice(1)} (${q === 'low' ? '1x' : q === 'medium' ? '2x' : '3x'})`} onClick={() => handleExport('png', q)} />
+                ))}
+                <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                <div className="px-2 pb-1" style={{ fontSize: 9, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  JPEG
+                </div>
+                {(['low', 'medium', 'high'] as const).map((q) => (
+                  <ExportOption key={`jpg-${q}`} label={`${q.charAt(0).toUpperCase() + q.slice(1)} (${q === 'low' ? '1x' : q === 'medium' ? '2x' : '3x'})`} onClick={() => handleExport('jpeg', q)} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         <Divider vertical={isVertical} />
 
@@ -385,6 +461,20 @@ function ToolbarIconButton({
       onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
     >
       {children}
+    </button>
+  )
+}
+
+function ExportOption({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="block w-full text-left text-[11px] px-3 py-1.5 rounded-md"
+      style={{ color: 'var(--color-text)', background: 'transparent', border: 'none', cursor: 'pointer' }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = 'var(--color-surface-2)' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+    >
+      {label}
     </button>
   )
 }

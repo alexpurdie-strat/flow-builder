@@ -135,7 +135,6 @@ function StepNode({ id, data, selected }: NodeProps) {
         transform: isUngrouped ? `scale(${scale})` : undefined,
         transformOrigin: 'top left',
         display: 'flex',
-        overflow: 'hidden',
       }}
       onDoubleClick={() => {
         setEditLabel(label)
@@ -166,6 +165,8 @@ function StepNode({ id, data, selected }: NodeProps) {
             position: 'relative',
             borderRight: '1px solid var(--color-border)',
             background: 'var(--color-surface-2)',
+            borderRadius: '8px 0 0 8px',
+            overflow: 'hidden',
           }}
         >
           <img
