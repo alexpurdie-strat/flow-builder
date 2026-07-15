@@ -14,6 +14,7 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   const nodes = useFlowStore((s) => s.nodes)
   const zoom = useFlowStore((s) => s.zoom)
   const setZoom = useFlowStore((s) => s.setZoom)
+  const isColliding = useFlowStore((s) => s.collidingGroupIds.includes(id))
   const { setViewport } = useReactFlow()
 
   const onResizeEnd = useCallback(() => {
@@ -126,13 +127,16 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
         }}
       >
         <div
+          className={isColliding ? 'group-colliding' : ''}
           style={{
             position: 'absolute',
             inset: 0,
-            border: '2px dashed var(--color-group-border)',
+            border: `2px dashed ${isColliding ? 'var(--color-danger)' : 'var(--color-group-border)'}`,
             borderRadius: 14,
-            opacity: 0.8,
+            opacity: isColliding ? 1 : 0.8,
+            background: isColliding ? 'rgba(239, 68, 68, 0.06)' : 'transparent',
             pointerEvents: 'none',
+            transition: 'border-color 0.15s, opacity 0.15s, background 0.15s',
           }}
         />
         {pill}
@@ -142,15 +146,16 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
 
   return (
     <div
-      className="group relative"
+      className={`group relative${isColliding ? ' group-colliding' : ''}`}
       style={{
-        background: 'transparent',
-        border: `2px dashed ${selected ? 'var(--color-accent)' : 'var(--color-group-border)'}`,
+        background: isColliding ? 'rgba(239, 68, 68, 0.06)' : 'transparent',
+        border: `2px dashed ${isColliding ? 'var(--color-danger)' : selected ? 'var(--color-accent)' : 'var(--color-group-border)'}`,
         borderRadius: 14,
         width: '100%',
         height: '100%',
         minWidth: 200,
         minHeight: 100,
+        transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s',
       }}
       onDoubleClick={(e) => {
         e.stopPropagation()

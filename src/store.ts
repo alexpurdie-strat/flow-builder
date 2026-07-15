@@ -36,6 +36,7 @@ type FlowState = {
   selectedNodes: string[]
   addMode: AddMode
   lineStartNodeId: string | null
+  collidingGroupIds: string[]
 
   onNodesChange: OnNodesChange
   onEdgesChange: OnEdgesChange
@@ -60,6 +61,8 @@ type FlowState = {
   ejectNodeFromGroup: (nodeId: string) => void
   absorbStepsIntoGroup: (groupId: string) => void
 
+  setCollidingGroupIds: (ids: string[]) => void
+  checkGroupCollision: (draggedId: string) => void
   duplicateNode: (id: string, offset?: { x: number; y: number }) => string | null
   linkSelectedNodes: () => void
   undo: () => void
@@ -119,6 +122,7 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   selectedNodes: [],
   addMode: 'cursor' as AddMode,
   lineStartNodeId: null,
+  collidingGroupIds: [],
 
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) })
@@ -549,6 +553,40 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           return n
         }),
       })
+    }
+  },
+
+  setCollidingGroupIds: (ids) => set({ collidingGroupIds: ids }),
+
+  checkGroupCollision: (draggedId) => {
+    const { nodes } = get()
+    const dragged = nodes.find((n) => n.id === draggedId)
+    if (!dragged || dragged.type !== 'group') {
+      if (get().collidingGroupIds.length > 0) set({ collidingGroupIds: [] })
+      return
+    }
+
+    const dw = (dragged.style?.width as number) ?? (dragged.data as Record<string, unknown>).expandedWidth as number ?? 400
+    const dh = (dragged.style?.height as number) ?? (dragged.data as Record<string, unknown>).expandedHeight as number ?? 300
+    const dx = dragged.position.x
+    const dy = dragged.position.y
+
+    const colliding: string[] = []
+    for (const node of nodes) {
+      if (node.type !== 'group' || node.id === draggedId) continue
+      const gw = (node.style?.width as number) ?? (node.data as Record<string, unknown>).expandedWidth as number ?? 400
+      const gh = (node.style?.height as number) ?? (node.data as Record<string, unknown>).expandedHeight as number ?? 300
+      const gx = node.position.x
+      const gy = node.position.y
+
+      if (dx < gx + gw && dx + dw > gx && dy < gy + gh && dy + dh > gy) {
+        colliding.push(node.id)
+      }
+    }
+
+    const prev = get().collidingGroupIds
+    if (colliding.length !== prev.length || colliding.some((id, i) => id !== prev[i])) {
+      set({ collidingGroupIds: colliding })
     }
   },
 

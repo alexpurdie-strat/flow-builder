@@ -130,6 +130,8 @@ function Flow() {
   const setLineStartNode = useFlowStore((s) => s.setLineStartNode)
   const handleNodeDropOnGroup = useFlowStore((s) => s.handleNodeDropOnGroup)
   const ejectNodeFromGroup = useFlowStore((s) => s.ejectNodeFromGroup)
+  const checkGroupCollision = useFlowStore((s) => s.checkGroupCollision)
+  const setCollidingGroupIds = useFlowStore((s) => s.setCollidingGroupIds)
   const connectingNodeId = useRef<string | null>(null)
 
   const undo = useFlowStore((s) => s.undo)
@@ -236,15 +238,25 @@ function Flow() {
     [duplicateNode]
   )
 
+  const onNodeDrag = useCallback(
+    (_: unknown, node: Node) => {
+      if (node.type === 'group') {
+        checkGroupCollision(node.id)
+      }
+    },
+    [checkGroupCollision]
+  )
+
   const onNodeDragStop = useCallback(
     (_: unknown, node: Node) => {
+      setCollidingGroupIds([])
       if (node.parentId) {
         ejectNodeFromGroup(node.id)
       } else {
         handleNodeDropOnGroup(node.id)
       }
     },
-    [handleNodeDropOnGroup, ejectNodeFromGroup]
+    [handleNodeDropOnGroup, ejectNodeFromGroup, setCollidingGroupIds]
   )
 
   const onConnectStart = useCallback(
@@ -434,6 +446,7 @@ function Flow() {
         onConnect={onConnect}
         onMove={onMove}
         onNodeDragStart={onNodeDragStart}
+        onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
