@@ -70,7 +70,7 @@ function StepNode({ id, data, selected }: NodeProps) {
 
   const fetchScreenshot = useCallback((url: string) => {
     setLoadingScreenshot(true)
-    fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url&screenshot.delay=15`, { redirect: 'follow' })
+    fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&screenshot=true&meta=false&embed=screenshot.url&waitUntil=networkidle2&screenshot.delay=5&timeout=30000`, { redirect: 'follow' })
       .then((res) => {
         if (!res.ok) throw new Error('Screenshot failed')
         return res.blob()
