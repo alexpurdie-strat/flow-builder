@@ -46,8 +46,9 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   const thisNode = nodes.find((n) => n.id === id)
   const expandedW = (thisNode?.data as Record<string, unknown>)?.expandedWidth as number | undefined
   const expandedH = (thisNode?.data as Record<string, unknown>)?.expandedHeight as number | undefined
-  const groupW = expandedW ?? (thisNode?.style?.width as number) ?? 400
-  const groupH = expandedH ?? (thisNode?.style?.height as number) ?? 300
+  const nodeAny = thisNode as Record<string, unknown> | undefined
+  const groupW = expandedW ?? (nodeAny?.width as number) ?? (thisNode?.style?.width as number) ?? 400
+  const groupH = expandedH ?? (nodeAny?.height as number) ?? (thisNode?.style?.height as number) ?? 300
 
   const handleCollapsedClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
