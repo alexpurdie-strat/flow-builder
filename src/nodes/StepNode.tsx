@@ -272,7 +272,7 @@ function StepNode({ id, data, selected }: NodeProps) {
             />
             <textarea
               className="bg-transparent border border-[var(--color-border)] rounded text-[var(--color-text-muted)] outline-none p-1.5 resize-none"
-              style={{ fontSize: 12 }}
+              style={{ fontSize: 11 }}
               rows={2}
               placeholder="Description (optional)"
               value={editDesc}
@@ -324,7 +324,7 @@ function StepNode({ id, data, selected }: NodeProps) {
                 className="mt-1"
                 style={{
                   color: 'var(--color-text-muted)',
-                  fontSize: 12,
+                  fontSize: 11,
                   wordBreak: 'break-word',
                   overflowWrap: 'anywhere',
                 }}
