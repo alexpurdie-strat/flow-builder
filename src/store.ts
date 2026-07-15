@@ -494,14 +494,13 @@ export const useFlowStore = create<FlowState>((set, get) => ({
   handleNodeDropOnGroup: (nodeId) => {
     const { nodes } = get()
     const node = nodes.find((n) => n.id === nodeId)
-    if (!node || node.type === 'group' || node.parentId) return
-    get().pushHistory()
+    if (!node || node.parentId) return
 
-    const groups = nodes.filter((n) => n.type === 'group')
-    const nodeW = (node.style?.width as number) ?? 160
-    const nodeH = (node.style?.height as number) ?? 60
-    const nodeCenterX = node.position.x + nodeW / 2
-    const nodeCenterY = node.position.y + nodeH / 2
+    const isGroup = node.type === 'group'
+    const nodeW = (node.style?.width as number) ?? (isGroup ? ((node.data as Record<string, unknown>).expandedWidth as number ?? 400) : 160)
+    const nodeH = (node.style?.height as number) ?? (isGroup ? ((node.data as Record<string, unknown>).expandedHeight as number ?? 300) : 60)
+
+    const groups = nodes.filter((n) => n.type === 'group' && n.id !== nodeId)
 
     for (const group of groups) {
       const gw = (group.style?.width as number) ?? 400
@@ -509,30 +508,47 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       const gx = group.position.x
       const gy = group.position.y
 
-      if (
-        nodeCenterX > gx &&
-        nodeCenterX < gx + gw &&
-        nodeCenterY > gy &&
-        nodeCenterY < gy + gh
-      ) {
-        set({
-          nodes: nodes.map((n) => {
-            if (n.id === nodeId) {
-              return {
-                ...n,
-                parentId: group.id,
-                position: {
-                  x: n.position.x - gx,
-                  y: n.position.y - gy,
-                },
-                data: { ...n.data, groupId: group.id },
-              }
-            }
-            return n
-          }),
-        })
-        return
+      if (isGroup) {
+        const fullyInside =
+          node.position.x >= gx &&
+          node.position.y >= gy &&
+          node.position.x + nodeW <= gx + gw &&
+          node.position.y + nodeH <= gy + gh
+        if (!fullyInside) continue
+      } else {
+        const cx = node.position.x + nodeW / 2
+        const cy = node.position.y + nodeH / 2
+        if (!(cx > gx && cx < gx + gw && cy > gy && cy < gy + gh)) continue
       }
+
+      get().pushHistory()
+      const childNodes = isGroup ? nodes.filter((n) => n.parentId === nodeId) : []
+      set({
+        nodes: nodes.map((n) => {
+          if (n.id === nodeId) {
+            return {
+              ...n,
+              parentId: group.id,
+              position: {
+                x: n.position.x - gx,
+                y: n.position.y - gy,
+              },
+              data: { ...n.data, groupId: group.id },
+            }
+          }
+          if (isGroup && childNodes.some((c) => c.id === n.id)) {
+            return {
+              ...n,
+              position: {
+                x: n.position.x,
+                y: n.position.y,
+              },
+            }
+          }
+          return n
+        }),
+      })
+      return
     }
   },
 
@@ -596,7 +612,13 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       const gx = node.position.x
       const gy = node.position.y
 
-      if (dx < gx + gw && dx + dw > gx && dy < gy + gh && dy + dh > gy) {
+      const overlaps = dx < gx + gw && dx + dw > gx && dy < gy + gh && dy + dh > gy
+      if (!overlaps) continue
+
+      const draggedInsideOther = dx >= gx && dy >= gy && dx + dw <= gx + gw && dy + dh <= gy + gh
+      const otherInsideDragged = gx >= dx && gy >= dy && gx + gw <= dx + dw && gy + gh <= dy + dh
+
+      if (!draggedInsideOther && !otherInsideDragged) {
         colliding.push(node.id)
       }
     }
@@ -617,8 +639,14 @@ export const useFlowStore = create<FlowState>((set, get) => ({
     const gw = (group.style?.width as number) ?? 400
     const gh = (group.style?.height as number) ?? 300
 
-    const stepsToAbsorb = nodes.filter((n) => {
-      if (n.type === 'group' || n.parentId || n.id === groupId) return false
+    const toAbsorb = nodes.filter((n) => {
+      if (n.parentId || n.id === groupId) return false
+      if (n.type === 'group') {
+        const nw = (n.style?.width as number) ?? (n.data as Record<string, unknown>).expandedWidth as number ?? 400
+        const nh = (n.style?.height as number) ?? (n.data as Record<string, unknown>).expandedHeight as number ?? 300
+        return n.position.x >= gx && n.position.y >= gy &&
+          n.position.x + nw <= gx + gw && n.position.y + nh <= gy + gh
+      }
       const nodeW = (n.style?.width as number) ?? 160
       const nodeH = (n.style?.height as number) ?? 60
       const cx = n.position.x + nodeW / 2
@@ -626,12 +654,13 @@ export const useFlowStore = create<FlowState>((set, get) => ({
       return cx > gx && cx < gx + gw && cy > gy && cy < gy + gh
     })
 
-    if (stepsToAbsorb.length === 0) return
+    if (toAbsorb.length === 0) return
     get().pushHistory()
 
+    const absorbIds = new Set(toAbsorb.map((n) => n.id))
     set({
       nodes: nodes.map((n) => {
-        if (stepsToAbsorb.some((s) => s.id === n.id)) {
+        if (absorbIds.has(n.id)) {
           return {
             ...n,
             parentId: groupId,
