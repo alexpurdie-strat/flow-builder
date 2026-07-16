@@ -239,8 +239,35 @@ export default function Toolbar() {
         img.src = dataUrl
       })
 
+    const normalizedNodes = nodes.map((n) => {
+      if (n.type === 'group') {
+        const d = n.data as Record<string, unknown>
+        if (d.collapsed) {
+          const ew = (d.expandedWidth as number)
+            ?? (n as Record<string, unknown>).width as number
+            ?? (n.style?.width as number)
+            ?? (n.measured?.width as number)
+            ?? 400
+          const eh = (d.expandedHeight as number)
+            ?? (n as Record<string, unknown>).height as number
+            ?? (n.style?.height as number)
+            ?? (n.measured?.height as number)
+            ?? 300
+          const { expandedWidth, expandedHeight, ...rest } = d
+          return {
+            ...n,
+            hidden: false,
+            data: { ...rest, collapsed: false },
+            style: { ...(n.style ?? {}), width: ew, height: eh },
+          }
+        }
+        return { ...n, hidden: false }
+      }
+      return { ...n, hidden: false }
+    })
+
     const thumbNodes = await Promise.all(
-      nodes.map(async (n) => {
+      normalizedNodes.map(async (n) => {
         const image = (n.data as Record<string, unknown>).image as string | undefined
         if (image && image.startsWith('data:')) {
           const thumb = await downscale(image, 100)
@@ -251,9 +278,10 @@ export default function Toolbar() {
     )
 
     try {
-      const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
-      const accentHover = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-hover').trim()
-      const theme = document.documentElement.getAttribute('data-theme') || 'dark'
+      const el = document.documentElement
+      const accent = getComputedStyle(el).getPropertyValue('--color-accent').trim()
+      const accentHover = getComputedStyle(el).getPropertyValue('--color-accent-hover').trim()
+      const theme = el.getAttribute('data-theme') || 'dark'
       const payload = JSON.stringify({ nodes: thumbNodes, edges, accent, accentHover, theme })
       const res = await fetch('https://bytebin.lucko.me/post', {
         method: 'POST',

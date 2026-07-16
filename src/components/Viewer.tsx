@@ -155,8 +155,11 @@ function ViewerInner({ blobId }: { blobId: string }) {
       })
       .then((data) => {
         if (!data.nodes || !data.edges) throw new Error('Invalid')
+        const el = document.documentElement
+        if (data.theme) {
+          el.setAttribute('data-theme', data.theme)
+        }
         if (data.accent) {
-          const el = document.documentElement
           el.style.setProperty('--color-accent', data.accent)
           if (data.accentHover) el.style.setProperty('--color-accent-hover', data.accentHover)
           const hex = data.accent
@@ -166,9 +169,6 @@ function ViewerInner({ blobId }: { blobId: string }) {
           el.style.setProperty('--color-group-bg', `rgba(${r}, ${g}, ${b}, 0.06)`)
           el.style.setProperty('--color-group-border', `rgba(${r}, ${g}, ${b}, 0.25)`)
           el.style.setProperty('--color-group-collapsed-bg', `rgba(${r}, ${g}, ${b}, 0.12)`)
-        }
-        if (data.theme) {
-          document.documentElement.setAttribute('data-theme', data.theme)
         }
         const parsed = parseFlowData(data)
         baseRef.current = parsed
