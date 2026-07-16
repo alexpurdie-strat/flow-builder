@@ -51,6 +51,19 @@ function applyZoomLevels(baseNodes: Node[], baseEdges: Edge[], zoom: number) {
 
       if (isNested && level3) {
         hiddenNodeIds.add(node.id)
+        if (!node.data.collapsed) {
+          const style = { ...(node.style ?? {}) } as Record<string, unknown>
+          const nodeAny = node as Record<string, unknown>
+          const ew = (nodeAny.width as number)
+            ?? (style.width as number)
+            ?? (node.measured?.width as number)
+            ?? 400
+          const eh = (nodeAny.height as number)
+            ?? (style.height as number)
+            ?? (node.measured?.height as number)
+            ?? 300
+          return { ...node, hidden: true, data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh } }
+        }
         return { ...node, hidden: true, data: { ...node.data, collapsed: true } }
       }
 
@@ -142,6 +155,21 @@ function ViewerInner({ blobId }: { blobId: string }) {
       })
       .then((data) => {
         if (!data.nodes || !data.edges) throw new Error('Invalid')
+        if (data.accent) {
+          const el = document.documentElement
+          el.style.setProperty('--color-accent', data.accent)
+          if (data.accentHover) el.style.setProperty('--color-accent-hover', data.accentHover)
+          const hex = data.accent
+          const r = parseInt(hex.slice(1, 3), 16)
+          const g = parseInt(hex.slice(3, 5), 16)
+          const b = parseInt(hex.slice(5, 7), 16)
+          el.style.setProperty('--color-group-bg', `rgba(${r}, ${g}, ${b}, 0.06)`)
+          el.style.setProperty('--color-group-border', `rgba(${r}, ${g}, ${b}, 0.25)`)
+          el.style.setProperty('--color-group-collapsed-bg', `rgba(${r}, ${g}, ${b}, 0.12)`)
+        }
+        if (data.theme) {
+          document.documentElement.setAttribute('data-theme', data.theme)
+        }
         const parsed = parseFlowData(data)
         baseRef.current = parsed
         setNodes(parsed.nodes)

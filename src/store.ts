@@ -174,6 +174,19 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
         if (isNested && level3) {
           hiddenNodeIds.add(node.id)
+          if (!node.data.collapsed) {
+            const style = { ...(node.style ?? {}) } as Record<string, unknown>
+            const nodeAny = node as Record<string, unknown>
+            const ew = (nodeAny.width as number)
+              ?? (style.width as number)
+              ?? (node.measured?.width as number)
+              ?? 400
+            const eh = (nodeAny.height as number)
+              ?? (style.height as number)
+              ?? (node.measured?.height as number)
+              ?? 300
+            return { ...node, hidden: true, data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh } }
+          }
           return { ...node, hidden: true, data: { ...node.data, collapsed: true } }
         }
 

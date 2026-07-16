@@ -251,7 +251,10 @@ export default function Toolbar() {
     )
 
     try {
-      const payload = JSON.stringify({ nodes: thumbNodes, edges })
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--color-accent').trim()
+      const accentHover = getComputedStyle(document.documentElement).getPropertyValue('--color-accent-hover').trim()
+      const theme = document.documentElement.getAttribute('data-theme') || 'dark'
+      const payload = JSON.stringify({ nodes: thumbNodes, edges, accent, accentHover, theme })
       const res = await fetch('https://bytebin.lucko.me/post', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
