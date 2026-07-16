@@ -218,13 +218,45 @@ export default function Toolbar() {
     setExportOpen(false)
   }
 
-  const handlePublish = useCallback(() => {
-    const json = saveToJSON()
+  const handlePublish = useCallback(async () => {
+    setPublishStatus('idle')
+    const { nodes, edges } = useFlowStore.getState()
+
+    const downscale = (dataUrl: string, maxW: number): Promise<string> =>
+      new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          const ratio = Math.min(maxW / img.width, 1)
+          const w = Math.round(img.width * ratio)
+          const h = Math.round(img.height * ratio)
+          const c = document.createElement('canvas')
+          c.width = w
+          c.height = h
+          const ctx = c.getContext('2d')!
+          ctx.drawImage(img, 0, 0, w, h)
+          resolve(c.toDataURL('image/jpeg', 0.5))
+        }
+        img.onerror = () => resolve(dataUrl)
+        img.src = dataUrl
+      })
+
+    const thumbNodes = await Promise.all(
+      nodes.map(async (n) => {
+        const image = (n.data as Record<string, unknown>).image as string | undefined
+        if (image && image.startsWith('data:')) {
+          const thumb = await downscale(image, 100)
+          return { ...n, data: { ...n.data, image: thumb } }
+        }
+        return n
+      })
+    )
+
+    const json = JSON.stringify({ nodes: thumbNodes, edges }, null, 2)
     const compressed = LZString.compressToEncodedURIComponent(json)
     const base = window.location.origin + window.location.pathname
     const url = `${base}#/view/${compressed}`
 
-    if (url.length > 8000) {
+    if (url.length > 32000) {
       setPublishStatus('too-large')
       setTimeout(() => setPublishStatus('idle'), 3000)
       return
@@ -234,7 +266,7 @@ export default function Toolbar() {
       setPublishStatus('copied')
       setTimeout(() => setPublishStatus('idle'), 2000)
     })
-  }, [saveToJSON])
+  }, [])
 
   const isVertical = anchor === 'left' || anchor === 'right'
 
