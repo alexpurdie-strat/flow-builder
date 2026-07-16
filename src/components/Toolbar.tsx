@@ -108,7 +108,7 @@ export default function Toolbar() {
   const [zoomOpen, setZoomOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [exportLevel, setExportLevel] = useState<'detailed' | 'collapsed' | 'overview' | null>(null)
-  const [publishStatus, setPublishStatus] = useState<'idle' | 'copied' | 'too-large'>('idle')
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'copied' | 'error' | 'uploading'>('idle')
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   const nodes = useFlowStore((s) => s.nodes)
 
@@ -218,7 +218,7 @@ export default function Toolbar() {
   }
 
   const handlePublish = useCallback(async () => {
-    setPublishStatus('idle')
+    setPublishStatus('uploading')
     const { nodes, edges } = useFlowStore.getState()
 
     const downscale = (dataUrl: string, maxW: number): Promise<string> =>
@@ -251,23 +251,23 @@ export default function Toolbar() {
     )
 
     try {
-      const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+      const payload = JSON.stringify({ nodes: thumbNodes, edges })
+      const res = await fetch('https://www.toptal.com/developers/hastebin/documents', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ nodes: thumbNodes, edges }),
+        body: payload,
       })
-      if (!res.ok) throw new Error('Upload failed')
-      const location = res.headers.get('Location') || res.headers.get('location')
-      const blobId = location?.split('/').pop()
-      if (!blobId) throw new Error('No blob ID')
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
+      const { key } = await res.json() as { key: string }
+      if (!key) throw new Error('No paste key returned')
 
       const base = window.location.origin + window.location.pathname
-      const url = `${base}#/view/${blobId}`
+      const url = `${base}#/view/${key}`
       await navigator.clipboard.writeText(url)
       setPublishStatus('copied')
       setTimeout(() => setPublishStatus('idle'), 2000)
-    } catch {
-      setPublishStatus('too-large')
+    } catch (err) {
+      console.error('Publish failed:', err)
+      setPublishStatus('error')
       setTimeout(() => setPublishStatus('idle'), 3000)
     }
   }, [])
@@ -379,7 +379,7 @@ export default function Toolbar() {
 
         <ToolbarButton
           onClick={handlePublish}
-          label={publishStatus === 'copied' ? 'Copied!' : publishStatus === 'too-large' ? 'Too large' : 'Publish'}
+          label={publishStatus === 'copied' ? 'Copied!' : publishStatus === 'error' ? 'Failed' : publishStatus === 'uploading' ? 'Publishing...' : 'Publish'}
         />
 
         <Divider vertical={isVertical} />

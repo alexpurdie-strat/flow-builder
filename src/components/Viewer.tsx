@@ -55,12 +55,10 @@ function ViewerInner({ blobId }: { blobId: string }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
-    fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
-      headers: { Accept: 'application/json' },
-    })
+    fetch(`https://www.toptal.com/developers/hastebin/raw/${blobId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Not found')
-        return res.json()
+        return res.text().then((t) => JSON.parse(t))
       })
       .then((data) => {
         if (!data.nodes || !data.edges) throw new Error('Invalid')
