@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -9,7 +9,6 @@ import {
   type Node,
   type Edge,
 } from '@xyflow/react'
-import LZString from 'lz-string'
 import StepNode from '../nodes/StepNode'
 import GroupNode from '../nodes/GroupNode'
 import TextNode from '../nodes/TextNode'
@@ -29,42 +28,64 @@ const edgeTypes = {
   default: FlowEdge,
 }
 
-function ViewerInner({ compressed }: { compressed: string }) {
-  const { nodes, edges, error } = useMemo(() => {
-    try {
-      const json = LZString.decompressFromEncodedURIComponent(compressed)
-      if (!json) return { nodes: [] as Node[], edges: [] as Edge[], error: 'Failed to decompress data' }
-      const data = JSON.parse(json)
-      if (!data.nodes || !data.edges) return { nodes: [] as Node[], edges: [] as Edge[], error: 'Invalid flow data' }
-      const nodes = (data.nodes as Node[]).map((n: Node) => {
-        if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
-          const { expandedWidth, expandedHeight, ...rest } = n.data as Record<string, unknown>
-          const w = (expandedWidth as number) ?? (n.style?.width as number) ?? 400
-          const h = (expandedHeight as number) ?? (n.style?.height as number) ?? 300
-          return {
-            ...n,
-            width: w,
-            height: h,
-            hidden: false,
-            data: { ...rest, collapsed: false },
-            style: { ...(n.style ?? {}), width: w, height: h },
-          }
-        }
-        return { ...n, hidden: false }
-      })
-      const edges = (data.edges as Edge[]).map((e: Edge) => ({ ...e, hidden: false }))
-      return { nodes, edges, error: null }
-    } catch {
-      return { nodes: [] as Node[], edges: [] as Edge[], error: 'Failed to parse flow data' }
+function parseFlowData(data: { nodes: Node[]; edges: Edge[] }) {
+  const nodes = data.nodes.map((n: Node) => {
+    if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
+      const { expandedWidth, expandedHeight, ...rest } = n.data as Record<string, unknown>
+      const w = (expandedWidth as number) ?? (n.style?.width as number) ?? 400
+      const h = (expandedHeight as number) ?? (n.style?.height as number) ?? 300
+      return {
+        ...n,
+        width: w,
+        height: h,
+        hidden: false,
+        data: { ...rest, collapsed: false },
+        style: { ...(n.style ?? {}), width: w, height: h },
+      }
     }
-  }, [compressed])
+    return { ...n, hidden: false }
+  })
+  const edges = data.edges.map((e: Edge) => ({ ...e, hidden: false }))
+  return { nodes, edges }
+}
 
-  if (error) {
+function ViewerInner({ blobId }: { blobId: string }) {
+  const [nodes, setNodes] = useState<Node[]>([])
+  const [edges, setEdges] = useState<Edge[]>([])
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  useEffect(() => {
+    fetch(`https://jsonblob.com/api/jsonBlob/${blobId}`, {
+      headers: { Accept: 'application/json' },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Not found')
+        return res.json()
+      })
+      .then((data) => {
+        if (!data.nodes || !data.edges) throw new Error('Invalid')
+        const parsed = parseFlowData(data)
+        setNodes(parsed.nodes)
+        setEdges(parsed.edges)
+        setStatus('ready')
+      })
+      .catch(() => setStatus('error'))
+  }, [blobId])
+
+  if (status === 'loading') {
+    return (
+      <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--color-canvas)' }}>
+        <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Loading flow...</div>
+      </div>
+    )
+  }
+
+  if (status === 'error') {
     return (
       <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--color-canvas)' }}>
         <div className="text-center" style={{ color: 'var(--color-text-muted)' }}>
-          <div style={{ fontSize: 14, fontWeight: 500 }}>{error}</div>
-          <div style={{ fontSize: 12, marginTop: 8, opacity: 0.6 }}>The share link may be invalid or corrupted.</div>
+          <div style={{ fontSize: 14, fontWeight: 500 }}>Failed to load flow</div>
+          <div style={{ fontSize: 12, marginTop: 8, opacity: 0.6 }}>The share link may be invalid or expired.</div>
         </div>
       </div>
     )
@@ -112,10 +133,10 @@ function ViewerInner({ compressed }: { compressed: string }) {
   )
 }
 
-export default function Viewer({ compressed }: { compressed: string }) {
+export default function Viewer({ blobId }: { blobId: string }) {
   return (
     <ReactFlowProvider>
-      <ViewerInner compressed={compressed} />
+      <ViewerInner blobId={blobId} />
     </ReactFlowProvider>
   )
 }

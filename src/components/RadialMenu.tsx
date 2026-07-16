@@ -117,7 +117,7 @@ export default function RadialMenu() {
   if (!open) {
     return (
       <div
-        className="fixed bottom-4 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
+        className="fixed bottom-14 right-4 z-50 flex items-center gap-2 px-3 py-2 rounded-lg text-xs"
         style={{
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',

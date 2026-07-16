@@ -2,7 +2,6 @@ import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
 import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
-import LZString from 'lz-string'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
 
@@ -251,21 +250,26 @@ export default function Toolbar() {
       })
     )
 
-    const json = JSON.stringify({ nodes: thumbNodes, edges }, null, 2)
-    const compressed = LZString.compressToEncodedURIComponent(json)
-    const base = window.location.origin + window.location.pathname
-    const url = `${base}#/view/${compressed}`
+    try {
+      const res = await fetch('https://jsonblob.com/api/jsonBlob', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ nodes: thumbNodes, edges }),
+      })
+      if (!res.ok) throw new Error('Upload failed')
+      const location = res.headers.get('Location') || res.headers.get('location')
+      const blobId = location?.split('/').pop()
+      if (!blobId) throw new Error('No blob ID')
 
-    if (url.length > 32000) {
-      setPublishStatus('too-large')
-      setTimeout(() => setPublishStatus('idle'), 3000)
-      return
-    }
-
-    navigator.clipboard.writeText(url).then(() => {
+      const base = window.location.origin + window.location.pathname
+      const url = `${base}#/view/${blobId}`
+      await navigator.clipboard.writeText(url)
       setPublishStatus('copied')
       setTimeout(() => setPublishStatus('idle'), 2000)
-    })
+    } catch {
+      setPublishStatus('too-large')
+      setTimeout(() => setPublishStatus('idle'), 3000)
+    }
   }, [])
 
   const isVertical = anchor === 'left' || anchor === 'right'
