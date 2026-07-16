@@ -11,11 +11,13 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   const deleteNode = useFlowStore((s) => s.deleteNode)
   const ungroupNode = useFlowStore((s) => s.ungroupNode)
   const absorbStepsIntoGroup = useFlowStore((s) => s.absorbStepsIntoGroup)
-  const nodes = useFlowStore((s) => s.nodes)
+  const storeNodes = useFlowStore((s) => s.nodes)
   const zoom = useFlowStore((s) => s.zoom)
   const setZoom = useFlowStore((s) => s.setZoom)
   const isColliding = useFlowStore((s) => s.collidingGroupIds.includes(id))
-  const { setViewport } = useReactFlow()
+  const rf = useReactFlow()
+  const { setViewport } = rf
+  const nodes = storeNodes.length > 0 ? storeNodes : rf.getNodes()
 
   const onResizeEnd = useCallback(() => {
     absorbStepsIntoGroup(id)
