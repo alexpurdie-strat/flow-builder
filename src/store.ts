@@ -1,4 +1,3 @@
-import type React from 'react'
 import { create } from 'zustand'
 import {
   type Node,
@@ -107,21 +106,11 @@ function loadSaved(): { nodes: Node[]; edges: Edge[] } | null {
         return isNaN(num) ? max : Math.max(max, num)
       }, 0)
       idCounter = maxId
-      const nodes = data.nodes.map((n: Node) => {
-        if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
-          const { expandedWidth, expandedHeight, ...rest } = n.data as Record<string, unknown>
-          const w = (expandedWidth as number) ?? 400
-          const h = (expandedHeight as number) ?? 300
-          return {
-            ...n,
-            width: w,
-            height: h,
-            data: { ...rest, collapsed: false },
-            style: { ...(n.style ?? {}), width: w, height: h },
-          }
-        }
-        return { ...n, hidden: false }
-      })
+      const nodes = data.nodes.map((n: Node) => ({
+        ...n,
+        hidden: false,
+        data: { ...n.data, collapsed: false },
+      }))
       const edges = data.edges.map((e: Edge) => ({ ...e, hidden: false }))
       return { nodes, edges }
     }
@@ -174,57 +163,10 @@ export const useFlowStore = create<FlowState>((set, get) => ({
 
         if (isNested && level3) {
           hiddenNodeIds.add(node.id)
-          if (!node.data.collapsed) {
-            const style = { ...(node.style ?? {}) } as Record<string, unknown>
-            const nodeAny = node as Record<string, unknown>
-            const ew = (nodeAny.width as number)
-              ?? (style.width as number)
-              ?? (node.measured?.width as number)
-              ?? 400
-            const eh = (nodeAny.height as number)
-              ?? (style.height as number)
-              ?? (node.measured?.height as number)
-              ?? 300
-            return { ...node, hidden: true, data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh } }
-          }
           return { ...node, hidden: true, data: { ...node.data, collapsed: true } }
         }
 
         const shouldCollapse = level3 || (level2 && !hasChildGroups)
-
-        if (shouldCollapse && !node.data.collapsed) {
-          const style = { ...(node.style ?? {}) } as Record<string, unknown>
-          const nodeAny = node as Record<string, unknown>
-          const ew = (nodeAny.width as number)
-            ?? (style.width as number)
-            ?? (node.measured?.width as number)
-            ?? 400
-          const eh = (nodeAny.height as number)
-            ?? (style.height as number)
-            ?? (node.measured?.height as number)
-            ?? 300
-          delete style.width
-          delete style.height
-          return {
-            ...node,
-            hidden: false,
-            data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh },
-            style: style as React.CSSProperties,
-          }
-        }
-        if (!shouldCollapse && node.data.collapsed) {
-          const { expandedWidth, expandedHeight, ...rest } = node.data as Record<string, unknown>
-          const w = (expandedWidth as number) ?? 400
-          const h = (expandedHeight as number) ?? 300
-          return {
-            ...node,
-            width: w,
-            height: h,
-            hidden: false,
-            data: { ...rest, collapsed: false },
-            style: { ...(node.style ?? {}), width: w, height: h },
-          }
-        }
         return { ...node, hidden: false, data: { ...node.data, collapsed: shouldCollapse } }
       }
       if (node.parentId || (node.data as StepNodeData).groupId) {
@@ -874,22 +816,11 @@ export const useFlowStore = create<FlowState>((set, get) => ({
           return isNaN(num) ? max : Math.max(max, num)
         }, 0)
         idCounter = maxId
-        const nodes = data.nodes.map((n: Node) => {
-          if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
-            const { expandedWidth, expandedHeight, ...rest } = n.data as Record<string, unknown>
-            const w = (expandedWidth as number) ?? (n as Record<string, unknown>).width as number ?? (n.style?.width as number) ?? 400
-            const h = (expandedHeight as number) ?? (n as Record<string, unknown>).height as number ?? (n.style?.height as number) ?? 300
-            return {
-              ...n,
-              width: w,
-              height: h,
-              hidden: false,
-              data: { ...rest, collapsed: false },
-              style: { ...(n.style ?? {}), width: w, height: h },
-            }
-          }
-          return { ...n, hidden: false }
-        })
+        const nodes = data.nodes.map((n: Node) => ({
+          ...n,
+          hidden: false,
+          data: { ...n.data, collapsed: false },
+        }))
         const edges = data.edges.map((e: Edge) => ({ ...e, hidden: false }))
         set({ nodes, edges })
       }

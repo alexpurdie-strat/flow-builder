@@ -251,32 +251,11 @@ export default function Toolbar() {
     }
     const usedNodes = nodes.filter((n) => connectedNodeIds.has(n.id))
 
-    const normalizedNodes = usedNodes.map((n) => {
-      if (n.type === 'group') {
-        const d = n.data as Record<string, unknown>
-        if (d.collapsed) {
-          const ew = (d.expandedWidth as number)
-            ?? (n as Record<string, unknown>).width as number
-            ?? (n.style?.width as number)
-            ?? (n.measured?.width as number)
-            ?? 400
-          const eh = (d.expandedHeight as number)
-            ?? (n as Record<string, unknown>).height as number
-            ?? (n.style?.height as number)
-            ?? (n.measured?.height as number)
-            ?? 300
-          const { expandedWidth, expandedHeight, ...rest } = d
-          return {
-            ...n,
-            hidden: false,
-            data: { ...rest, collapsed: false },
-            style: { ...(n.style ?? {}), width: ew, height: eh },
-          }
-        }
-        return { ...n, hidden: false }
-      }
-      return { ...n, hidden: false }
-    })
+    const normalizedNodes = usedNodes.map((n) => ({
+      ...n,
+      hidden: false,
+      data: { ...n.data, collapsed: false },
+    }))
 
     const thumbNodes = await Promise.all(
       normalizedNodes.map(async (n) => {
