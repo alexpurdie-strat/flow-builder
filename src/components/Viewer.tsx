@@ -158,6 +158,7 @@ function ViewerInner({ blobId }: { blobId: string }) {
         baseRef.current.edges,
         viewport.zoom
       )
+      baseRef.current = { nodes: updated, edges: updatedEdges }
       setNodes(updated)
       setEdges(updatedEdges)
     },

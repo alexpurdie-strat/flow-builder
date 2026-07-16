@@ -32,8 +32,10 @@ function Linkify({ text }: { text: string }) {
             href={p.text}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ color: 'var(--color-accent)', textDecoration: 'underline' }}
+            className="nodrag nopan"
+            style={{ color: 'var(--color-accent)', textDecoration: 'underline', cursor: 'pointer' }}
             onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             {p.text}
           </a>
