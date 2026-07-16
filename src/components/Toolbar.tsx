@@ -2,6 +2,7 @@ import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
 import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
+import { compressToEncodedURIComponent } from 'lz-string'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
 
@@ -108,6 +109,7 @@ export default function Toolbar() {
   const [zoomOpen, setZoomOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [exportLevel, setExportLevel] = useState<'detailed' | 'collapsed' | 'overview' | null>(null)
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'copied' | 'too-large'>('idle')
   const dragStartRef = useRef<{ x: number; y: number } | null>(null)
   const nodes = useFlowStore((s) => s.nodes)
 
@@ -216,6 +218,24 @@ export default function Toolbar() {
     setExportOpen(false)
   }
 
+  const handlePublish = useCallback(() => {
+    const json = saveToJSON()
+    const compressed = compressToEncodedURIComponent(json)
+    const base = window.location.origin + window.location.pathname
+    const url = `${base}#/view/${compressed}`
+
+    if (url.length > 8000) {
+      setPublishStatus('too-large')
+      setTimeout(() => setPublishStatus('idle'), 3000)
+      return
+    }
+
+    navigator.clipboard.writeText(url).then(() => {
+      setPublishStatus('copied')
+      setTimeout(() => setPublishStatus('idle'), 2000)
+    })
+  }, [saveToJSON])
+
   const isVertical = anchor === 'left' || anchor === 'right'
 
   return (
@@ -320,6 +340,11 @@ export default function Toolbar() {
             </>
           )}
         </div>
+
+        <ToolbarButton
+          onClick={handlePublish}
+          label={publishStatus === 'copied' ? 'Copied!' : publishStatus === 'too-large' ? 'Too large' : 'Publish'}
+        />
 
         <Divider vertical={isVertical} />
 

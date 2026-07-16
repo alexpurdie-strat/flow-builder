@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from 'react'
+import { useCallback, useRef, useEffect, useState, useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -28,9 +28,10 @@ import LinkNodesOverlay from './components/LinkNodesOverlay'
 import RadialMenu from './components/RadialMenu'
 import CursorFollower from './components/CursorFollower'
 import AlignToolbar from './components/AlignToolbar'
+import Viewer from './components/Viewer'
 
-const BUILD = 33
-const BUILD_DATE = '15/07/2026 00:00 EST'
+const BUILD = 34
+const BUILD_DATE = '16/07/2026 00:00 EST'
 import FlowEdge from './edges/FlowEdge'
 
 const nodeTypes = {
@@ -584,7 +585,27 @@ function DragLinePreview({ drag }: { drag: DragState }) {
   )
 }
 
+function useViewHash(): string | null {
+  const [hash, setHash] = useState(window.location.hash)
+  useEffect(() => {
+    const onHashChange = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+  return useMemo(() => {
+    const prefix = '#/view/'
+    if (hash.startsWith(prefix)) return hash.slice(prefix.length)
+    return null
+  }, [hash])
+}
+
 export default function App() {
+  const viewData = useViewHash()
+
+  if (viewData) {
+    return <Viewer compressed={viewData} />
+  }
+
   return (
     <ReactFlowProvider>
       <Flow />
