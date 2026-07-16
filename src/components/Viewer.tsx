@@ -55,10 +55,10 @@ function ViewerInner({ blobId }: { blobId: string }) {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
   useEffect(() => {
-    fetch(`https://dpaste.org/${blobId}.txt`)
+    fetch(`https://bytebin.lucko.me/${blobId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Not found')
-        return res.text().then((t) => JSON.parse(t))
+        return res.json()
       })
       .then((data) => {
         if (!data.nodes || !data.edges) throw new Error('Invalid')

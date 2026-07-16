@@ -252,21 +252,17 @@ export default function Toolbar() {
 
     try {
       const payload = JSON.stringify({ nodes: thumbNodes, edges })
-      const form = new FormData()
-      form.append('content', payload)
-      form.append('lexer', 'json')
-      form.append('format', 'url')
-      const res = await fetch('https://dpaste.org/api/', {
+      const res = await fetch('https://bytebin.lucko.me/post', {
         method: 'POST',
-        body: form,
+        headers: { 'Content-Type': 'application/json' },
+        body: payload,
       })
       if (!res.ok) throw new Error(`Upload failed: ${res.status}`)
-      const pasteUrl = (await res.text()).trim()
-      const pasteId = pasteUrl.split('/').filter(Boolean).pop()
-      if (!pasteId) throw new Error('No paste ID returned')
+      const { key } = await res.json() as { key: string }
+      if (!key) throw new Error('No key returned')
 
       const base = window.location.origin + window.location.pathname
-      const url = `${base}#/view/${pasteId}`
+      const url = `${base}#/view/${key}`
       await navigator.clipboard.writeText(url)
       setPublishStatus('copied')
       setTimeout(() => setPublishStatus('idle'), 2000)
