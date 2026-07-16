@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -28,6 +28,85 @@ const edgeTypes = {
   default: FlowEdge,
 }
 
+const ZOOM_LEVEL_2 = 0.9
+const ZOOM_LEVEL_3 = 0.5
+
+function applyZoomLevels(baseNodes: Node[], baseEdges: Edge[], zoom: number) {
+  const level2 = zoom < ZOOM_LEVEL_2
+  const level3 = zoom < ZOOM_LEVEL_3
+
+  const groupsWithChildGroups = new Set<string>()
+  for (const n of baseNodes) {
+    if (n.type === 'group' && n.parentId) {
+      groupsWithChildGroups.add(n.parentId)
+    }
+  }
+
+  const hiddenNodeIds = new Set<string>()
+
+  const nodes = baseNodes.map((node) => {
+    if (node.type === 'group') {
+      const isNested = !!node.parentId
+      const hasChildGroups = groupsWithChildGroups.has(node.id)
+
+      if (isNested && level3) {
+        hiddenNodeIds.add(node.id)
+        return { ...node, hidden: true, data: { ...node.data, collapsed: true } }
+      }
+
+      const shouldCollapse = level3 || (level2 && !hasChildGroups)
+
+      if (shouldCollapse && !node.data.collapsed) {
+        const style = { ...(node.style ?? {}) } as Record<string, unknown>
+        const nodeAny = node as Record<string, unknown>
+        const ew = (nodeAny.width as number)
+          ?? (style.width as number)
+          ?? (node.measured?.width as number)
+          ?? 400
+        const eh = (nodeAny.height as number)
+          ?? (style.height as number)
+          ?? (node.measured?.height as number)
+          ?? 300
+        delete style.width
+        delete style.height
+        return {
+          ...node,
+          hidden: false,
+          data: { ...node.data, collapsed: true, expandedWidth: ew, expandedHeight: eh },
+          style: style as React.CSSProperties,
+        }
+      }
+      if (!shouldCollapse && node.data.collapsed) {
+        const { expandedWidth, expandedHeight, ...rest } = node.data as Record<string, unknown>
+        const w = (expandedWidth as number) ?? 400
+        const h = (expandedHeight as number) ?? 300
+        return {
+          ...node,
+          width: w,
+          height: h,
+          hidden: false,
+          data: { ...rest, collapsed: false },
+          style: { ...(node.style ?? {}), width: w, height: h },
+        }
+      }
+      return { ...node, hidden: false, data: { ...node.data, collapsed: shouldCollapse } }
+    }
+
+    if (node.parentId || (node.data as Record<string, unknown>).groupId) {
+      if (level2) hiddenNodeIds.add(node.id)
+      return { ...node, hidden: level2 }
+    }
+    return node
+  })
+
+  const edges = baseEdges.map((edge) => ({
+    ...edge,
+    hidden: hiddenNodeIds.has(edge.source) || hiddenNodeIds.has(edge.target),
+  }))
+
+  return { nodes, edges }
+}
+
 function parseFlowData(data: { nodes: Node[]; edges: Edge[] }) {
   const nodes = data.nodes.map((n: Node) => {
     if (n.type === 'group' && (n.data as Record<string, unknown>).collapsed) {
@@ -53,6 +132,7 @@ function ViewerInner({ blobId }: { blobId: string }) {
   const [nodes, setNodes] = useState<Node[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+  const baseRef = useRef<{ nodes: Node[]; edges: Edge[] }>({ nodes: [], edges: [] })
 
   useEffect(() => {
     fetch(`https://bytebin.lucko.me/${blobId}`)
@@ -63,12 +143,26 @@ function ViewerInner({ blobId }: { blobId: string }) {
       .then((data) => {
         if (!data.nodes || !data.edges) throw new Error('Invalid')
         const parsed = parseFlowData(data)
+        baseRef.current = parsed
         setNodes(parsed.nodes)
         setEdges(parsed.edges)
         setStatus('ready')
       })
       .catch(() => setStatus('error'))
   }, [blobId])
+
+  const onMove = useCallback(
+    (_event: MouseEvent | TouchEvent | null, viewport: { zoom: number }) => {
+      const { nodes: updated, edges: updatedEdges } = applyZoomLevels(
+        baseRef.current.nodes,
+        baseRef.current.edges,
+        viewport.zoom
+      )
+      setNodes(updated)
+      setEdges(updatedEdges)
+    },
+    []
+  )
 
   if (status === 'loading') {
     return (
@@ -111,11 +205,10 @@ function ViewerInner({ blobId }: { blobId: string }) {
         edgeTypes={edgeTypes}
         fitView
         minZoom={0.1}
+        onMove={onMove}
         nodesDraggable={false}
         nodesConnectable={false}
-        nodesFocusable={false}
         edgesFocusable={false}
-        elementsSelectable={false}
         panOnDrag
         panOnScroll
         zoomOnScroll={false}
