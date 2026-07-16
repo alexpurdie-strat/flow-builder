@@ -239,7 +239,19 @@ export default function Toolbar() {
         img.src = dataUrl
       })
 
-    const normalizedNodes = nodes.map((n) => {
+    const connectedNodeIds = new Set<string>()
+    for (const e of edges) {
+      connectedNodeIds.add(e.source)
+      connectedNodeIds.add(e.target)
+    }
+    for (const n of nodes) {
+      if (n.parentId) connectedNodeIds.add(n.id)
+      if (n.type === 'group') connectedNodeIds.add(n.id)
+      if (n.type === 'text') connectedNodeIds.add(n.id)
+    }
+    const usedNodes = nodes.filter((n) => connectedNodeIds.has(n.id))
+
+    const normalizedNodes = usedNodes.map((n) => {
       if (n.type === 'group') {
         const d = n.data as Record<string, unknown>
         if (d.collapsed) {

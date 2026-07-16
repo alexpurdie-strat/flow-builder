@@ -4,7 +4,7 @@ import { useFlowStore, type ShapeType } from '../store'
 
 function ShapeSvg({ shape, w, h }: { shape: ShapeType; w: number; h: number }) {
   const stroke = 'var(--color-accent)'
-  const fill = 'var(--color-surface)'
+  const fill = 'var(--color-accent)'
   const sw = 2
   const p = sw / 2
 
@@ -186,7 +186,7 @@ function ShapeNode({ id, data, selected }: NodeProps) {
           {editing ? (
             <input
               ref={inputRef}
-              className="bg-transparent text-center text-[var(--color-text)] font-medium outline-none w-full px-2"
+              className="bg-transparent text-center text-[var(--color-canvas)] font-medium outline-none w-full px-2"
               style={{ fontSize: 13 }}
               value={editLabel}
               onChange={(e) => setEditLabel(e.target.value)}
@@ -199,7 +199,7 @@ function ShapeNode({ id, data, selected }: NodeProps) {
           ) : label ? (
             <div
               className="text-center font-medium px-2 overflow-hidden text-ellipsis"
-              style={{ color: 'var(--color-text)', fontSize: 13, lineHeight: '1.2' }}
+              style={{ color: 'var(--color-canvas)', fontSize: 13, lineHeight: '1.2' }}
             >
               {label}
             </div>

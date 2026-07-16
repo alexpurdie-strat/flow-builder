@@ -97,7 +97,7 @@ function FlowEdge({
   const updateEdgeStyle = useFlowStore((s) => s.updateEdgeStyle)
 
   const strokeWidth = (data?.strokeWidth as number) ?? 2
-  const endType = ((data?.endType as string) ?? 'arrowclosed') as EndpointStyle
+  const endType = ((data?.endType as string) ?? 'none') as EndpointStyle
   const startType = ((data?.startType as string) ?? 'none') as EndpointStyle
 
   const [edgePath, labelX, labelY] = getBezierPath({
