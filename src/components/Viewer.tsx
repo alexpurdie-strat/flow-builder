@@ -9,7 +9,7 @@ import {
   type Node,
   type Edge,
 } from '@xyflow/react'
-import { decompressFromEncodedURIComponent } from 'lz-string'
+import LZString from 'lz-string'
 import StepNode from '../nodes/StepNode'
 import GroupNode from '../nodes/GroupNode'
 import TextNode from '../nodes/TextNode'
@@ -32,7 +32,7 @@ const edgeTypes = {
 function ViewerInner({ compressed }: { compressed: string }) {
   const { nodes, edges, error } = useMemo(() => {
     try {
-      const json = decompressFromEncodedURIComponent(compressed)
+      const json = LZString.decompressFromEncodedURIComponent(compressed)
       if (!json) return { nodes: [] as Node[], edges: [] as Edge[], error: 'Failed to decompress data' }
       const data = JSON.parse(json)
       if (!data.nodes || !data.edges) return { nodes: [] as Node[], edges: [] as Edge[], error: 'Invalid flow data' }

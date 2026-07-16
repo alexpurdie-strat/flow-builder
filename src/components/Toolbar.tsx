@@ -2,7 +2,7 @@ import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
 import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
-import { compressToEncodedURIComponent } from 'lz-string'
+import LZString from 'lz-string'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
 
@@ -220,7 +220,7 @@ export default function Toolbar() {
 
   const handlePublish = useCallback(() => {
     const json = saveToJSON()
-    const compressed = compressToEncodedURIComponent(json)
+    const compressed = LZString.compressToEncodedURIComponent(json)
     const base = window.location.origin + window.location.pathname
     const url = `${base}#/view/${compressed}`
 

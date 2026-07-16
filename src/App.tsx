@@ -30,7 +30,7 @@ import CursorFollower from './components/CursorFollower'
 import AlignToolbar from './components/AlignToolbar'
 import Viewer from './components/Viewer'
 
-const BUILD = 34
+const BUILD = 35
 const BUILD_DATE = '16/07/2026 00:00 EST'
 import FlowEdge from './edges/FlowEdge'
 

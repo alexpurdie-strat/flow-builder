@@ -76,26 +76,25 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
   }, [positionAbsoluteX, positionAbsoluteY, groupW, groupH, setViewport, setZoom])
 
   if (collapsed) {
-    const showFootprint = children.length > 0
-
-    const pill = (
+    return (
       <div
         onClick={handleCollapsedClick}
         onDoubleClick={handleCollapsedDoubleClick}
+        className={isColliding ? 'group-colliding' : ''}
         style={{
-          ...(showFootprint
-            ? { position: 'absolute' as const, left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }
-            : {}),
+          width: groupW,
+          height: groupH,
           background: 'var(--color-group-collapsed-bg)',
-          border: `2px solid var(--color-group-border)`,
+          border: `2px solid ${isColliding ? 'var(--color-danger)' : 'var(--color-group-border)'}`,
           borderRadius: 14,
-          padding: `${20 * scale}px ${28 * scale}px`,
-          minWidth: 180 * scale,
-          textAlign: 'center' as const,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
           cursor: 'pointer',
           boxShadow: selected ? '0 0 0 3px rgba(83, 194, 139, 0.2)' : 'none',
           backdropFilter: 'blur(8px)',
-          whiteSpace: 'nowrap' as const,
+          transition: 'border-color 0.15s, background 0.15s',
         }}
       >
         <Handle type="source" position={Position.Top} id="top-source" />
@@ -126,33 +125,6 @@ function GroupNode({ id, data, selected, positionAbsoluteX, positionAbsoluteY }:
         >
           {childLabel} · click to open
         </div>
-      </div>
-    )
-
-    if (!showFootprint) return pill
-
-    return (
-      <div
-        style={{
-          position: 'relative',
-          width: groupW,
-          height: groupH,
-        }}
-      >
-        <div
-          className={isColliding ? 'group-colliding' : ''}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            border: `3px dashed ${isColliding ? 'var(--color-danger)' : 'var(--color-group-border)'}`,
-            borderRadius: 14,
-            opacity: 1,
-            background: isColliding ? 'rgba(239, 68, 68, 0.06)' : 'transparent',
-            pointerEvents: 'none',
-            transition: 'border-color 0.15s, opacity 0.15s, background 0.15s',
-          }}
-        />
-        {pill}
       </div>
     )
   }
