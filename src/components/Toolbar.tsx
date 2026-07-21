@@ -238,30 +238,29 @@ export default function Toolbar() {
 
   const handleExportJSON = () => {
     const { nodes, edges } = useFlowStore.getState()
-    const data = nodes
-      .filter((n) => !n.hidden)
-      .map((n) => {
-        const d = n.data as Record<string, unknown>
-        const base: Record<string, unknown> = {
-          id: n.id,
-          type: n.type,
-          label: d.label,
-          position: n.position,
-        }
-        if (n.parentId) base.parentId = n.parentId
-        if (n.type === 'group') {
-          base.width = n.style?.width ?? 400
-          base.height = n.style?.height ?? 300
-        }
-        if (d.description) base.description = d.description
-        if (d.category) base.category = d.category
-        if (d.url) base.url = d.url
-        return base
-      })
+    const visible = nodes.filter((n) => !n.hidden)
+
+    const toEntry = (n: typeof visible[number]): Record<string, unknown> => {
+      const d = n.data as Record<string, unknown>
+      const entry: Record<string, unknown> = { id: n.id, type: n.type, label: d.label }
+      if (d.description) entry.description = d.description
+      if (d.category) entry.category = d.category
+      if (d.url) entry.url = d.url
+      if (n.type === 'group') {
+        const children = visible.filter((c) => c.parentId === n.id)
+        const childGroups = children.filter((c) => c.type === 'group').map(toEntry)
+        const childSteps = children.filter((c) => c.type !== 'group').map(toEntry)
+        if (childGroups.length > 0) entry.groups = childGroups
+        if (childSteps.length > 0) entry.steps = childSteps
+      }
+      return entry
+    }
+
+    const topLevel = visible.filter((n) => !n.parentId).map(toEntry)
     const connections = edges
       .filter((e) => !e.hidden)
       .map((e) => ({ from: e.source, to: e.target }))
-    const json = JSON.stringify({ nodes: data, connections }, null, 2)
+    const json = JSON.stringify({ flow: topLevel, connections }, null, 2)
     navigator.clipboard.writeText(json)
     setExportOpen(false)
   }
