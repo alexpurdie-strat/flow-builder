@@ -186,7 +186,8 @@ export default function Toolbar() {
           })
         : nodes.filter((n) => !n.hidden)
 
-    const boundsNodes = visibleNodes.length > 0 ? visibleNodes : nodes
+    const topLevelVisible = visibleNodes.filter((n) => !n.parentId)
+    const boundsNodes = topLevelVisible.length > 0 ? topLevelVisible : visibleNodes
     const nodesBounds = getNodesBounds(boundsNodes)
 
     const imageW = nodesBounds.width + padding * 2
