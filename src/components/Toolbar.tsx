@@ -101,7 +101,8 @@ export default function Toolbar() {
   const clearAll = useFlowStore((s) => s.clearAll)
   const zoom = useFlowStore((s) => s.zoom)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { zoomTo, fitView } = useReactFlow()
+  const rf = useReactFlow()
+  const { zoomTo, fitView } = rf
 
   const [anchor, setAnchor] = useState<Anchor>('top')
   const [dragging, setDragging] = useState(false)
@@ -176,15 +177,17 @@ export default function Toolbar() {
     const pixelRatio = 3
     const padding = 60
 
+    const rfNodes = rf.getNodes()
+
     const visibleNodes = level === 'overview'
-      ? nodes.filter((n) => n.type === 'group' || !n.parentId)
+      ? rfNodes.filter((n) => n.type === 'group' || !n.parentId)
       : level === 'collapsed'
-        ? nodes.filter((n) => {
+        ? rfNodes.filter((n) => {
             if (n.type === 'group') return true
             if (n.parentId) return false
             return true
           })
-        : nodes.filter((n) => !n.hidden)
+        : rfNodes.filter((n) => !n.hidden)
 
     const topLevelVisible = visibleNodes.filter((n) => !n.parentId)
     const boundsNodes = topLevelVisible.length > 0 ? topLevelVisible : visibleNodes
