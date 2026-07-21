@@ -1,6 +1,6 @@
 import { useFlowStore, type AddMode } from '../store'
 import { useRef, useState, useCallback } from 'react'
-import { useReactFlow, getNodesBounds, getViewportForBounds } from '@xyflow/react'
+import { useReactFlow } from '@xyflow/react'
 import { toPng, toJpeg } from 'html-to-image'
 
 type ToolMode = { key: AddMode; label: string; icon: React.ReactNode }
@@ -171,31 +171,46 @@ export default function Toolbar() {
   type ExportLevel = 'detailed' | 'collapsed' | 'overview'
 
   const handleExport = (format: 'png' | 'jpeg', level: ExportLevel) => {
-    const el = document.querySelector('.react-flow__viewport') as HTMLElement
-    if (!el || nodes.length === 0) return
+    const viewport = document.querySelector('.react-flow__viewport') as HTMLElement
+    if (!viewport || nodes.length === 0) return
 
-    const pixelRatio = 3
-    const padding = 60
+    const pixelRatio = 2
+    const padding = 40
 
-    const rfNodes = rf.getNodes()
+    const domNodes = viewport.querySelectorAll('.react-flow__node')
+    if (domNodes.length === 0) return
 
-    const visibleNodes = level === 'overview'
-      ? rfNodes.filter((n) => n.type === 'group' || !n.parentId)
-      : level === 'collapsed'
-        ? rfNodes.filter((n) => {
-            if (n.type === 'group') return true
-            if (n.parentId) return false
-            return true
-          })
-        : rfNodes.filter((n) => !n.hidden)
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+    const vpRect = viewport.getBoundingClientRect()
+    const vpTransform = window.getComputedStyle(viewport).transform
+    let vpScale = 1
+    if (vpTransform && vpTransform !== 'none') {
+      const m = vpTransform.match(/matrix\(([^)]+)\)/)
+      if (m) vpScale = parseFloat(m[1].split(',')[0]) || 1
+    }
 
-    const topLevelVisible = visibleNodes.filter((n) => !n.parentId)
-    const boundsNodes = topLevelVisible.length > 0 ? topLevelVisible : visibleNodes
-    const nodesBounds = getNodesBounds(boundsNodes)
+    domNodes.forEach((el) => {
+      const r = (el as HTMLElement).getBoundingClientRect()
+      if (r.width === 0 && r.height === 0) return
+      const x = (r.left - vpRect.left) / vpScale
+      const y = (r.top - vpRect.top) / vpScale
+      const w = r.width / vpScale
+      const h = r.height / vpScale
+      minX = Math.min(minX, x)
+      minY = Math.min(minY, y)
+      maxX = Math.max(maxX, x + w)
+      maxY = Math.max(maxY, y + h)
+    })
 
-    const imageW = nodesBounds.width + padding * 2
-    const imageH = nodesBounds.height + padding * 2
-    const viewport = getViewportForBounds(nodesBounds, imageW, imageH, 0.5, 2, padding)
+    if (!isFinite(minX)) return
+
+    const contentW = maxX - minX
+    const contentH = maxY - minY
+    const imageW = contentW + padding * 2
+    const imageH = contentH + padding * 2
+
+    const tx = -minX + padding
+    const ty = -minY + padding
 
     const opts = {
       width: imageW * pixelRatio,
@@ -203,7 +218,7 @@ export default function Toolbar() {
       style: {
         width: `${imageW}px`,
         height: `${imageH}px`,
-        transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+        transform: `translate(${tx}px, ${ty}px)`,
       },
       pixelRatio,
       ...(format === 'jpeg' ? { quality: 0.95 } : {}),
@@ -212,12 +227,42 @@ export default function Toolbar() {
     const fn = format === 'png' ? toPng : toJpeg
     const ext = format === 'png' ? 'png' : 'jpg'
 
-    fn(el, opts).then((dataUrl) => {
+    fn(viewport, opts).then((dataUrl) => {
       const a = document.createElement('a')
       a.href = dataUrl
       a.download = `flow-${level}.${ext}`
       a.click()
     })
+    setExportOpen(false)
+  }
+
+  const handleExportJSON = () => {
+    const { nodes, edges } = useFlowStore.getState()
+    const data = nodes
+      .filter((n) => !n.hidden)
+      .map((n) => {
+        const d = n.data as Record<string, unknown>
+        const base: Record<string, unknown> = {
+          id: n.id,
+          type: n.type,
+          label: d.label,
+          position: n.position,
+        }
+        if (n.parentId) base.parentId = n.parentId
+        if (n.type === 'group') {
+          base.width = n.style?.width ?? 400
+          base.height = n.style?.height ?? 300
+        }
+        if (d.description) base.description = d.description
+        if (d.category) base.category = d.category
+        if (d.url) base.url = d.url
+        return base
+      })
+    const connections = edges
+      .filter((e) => !e.hidden)
+      .map((e) => ({ from: e.source, to: e.target }))
+    const json = JSON.stringify({ nodes: data, connections }, null, 2)
+    navigator.clipboard.writeText(json)
     setExportOpen(false)
   }
 
@@ -380,6 +425,8 @@ export default function Toolbar() {
                     <ExportOption label="Detailed" onClick={() => setExportLevel('detailed')} />
                     <ExportOption label="Groups Collapsed" onClick={() => setExportLevel('collapsed')} />
                     <ExportOption label="Overview" onClick={() => setExportLevel('overview')} />
+                    <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0' }} />
+                    <ExportOption label="Copy JSON" onClick={handleExportJSON} />
                   </>
                 ) : (
                   <>
